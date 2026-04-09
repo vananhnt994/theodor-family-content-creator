@@ -11,17 +11,17 @@ Die Pipeline ist als strikte Kette (Daisy-Chain) aufgebaut. Kein Service greift 
 Dieser Service ist der strategische Kopf der Pipeline. Er verbindet sich mit dem Internet, um Echtzeit-Daten zu sammeln, verarbeitet diese aber extrem ressourcenschonend.
 
 * **Features:**
-  * **Headless Web-Scraping:** Nutzt Playwright, um unsichtbar Foren (z.B. Reddit `old.reddit.com` für reines Text-Scraping ohne JavaScript-Overhead) zu lesen.
-  * **KI-Kuratierung:** Sendet die Rohdaten an eine externe API (z.B. Gemini Flash/Pro via Free Tier), um das viralste und humorvollste Thema zu identifizieren.
+  * **Headless Web-Scraping:** Nutzt Playwright, um unsichtbar Foren (z.B.  `webtretho.com`, `dantri.com.vn`, `vnexpress.net`, `lamchame.com` für reines Text-Scraping ohne JavaScript-Overhead) zu lesen.
+  * **KI-Kuratierung:** Sendet die Rohdaten an eine externe API (z.B. Gemini Flash/Pro via Free Tier), um das viralste und sinnvollste und positive Themen für die Zielgruppe der Erziehung, Familienwahnsinn und Alltag in Vietnam zu identifizieren.
 * **Verbindungen:**
-  * **Input:** Ziel-URLs (z.B. Subreddits, News-Feeds).
+  * **Input:** Ziel-URLs (z.B. `webtretho.com`, `dantri.com.vn`, `vnexpress.net`, `lamchame.com`).
   * **Output:** Generiert die Datei `thema.json` (enthält `titel` und `beschreibung`).
 
 ### ✍️ Service 1: The Creator (Die Redaktion)
 Der kreative Motor des Systems. Arbeitet zu 100 % lokal auf dem Jetson.
 
 * **Features:**
-  * **Skript-Erstellung:** Schreibt ein humorvolles Voiceover-Drehbuch auf Basis des ermittelten Themas.
+  * **Skript-Erstellung:** Schreibt ein warmes Voiceover-Drehbuch auf Basis des ermittelten Themas.
   * **Szenen-Splitting:** Teilt den Text logisch in 3- bis 5-Sekunden-Abschnitte auf, die ideal für Kurzvideos sind.
   * **Prompt-Drafting:** Übersetzt die Handlung jeder Szene in erste englische Bild-Prompts.
 * **Verbindungen:**
@@ -52,7 +52,7 @@ Der technische "Hack", um vorhandene Adobe-Credits ohne Enterprise-API zu nutzen
 Erzeugt die Sprecherstimme offline und rasend schnell.
 
 * **Features:**
-  * **Piper TTS Integration:** Nutzt das winzige Piper-Modell, um natürliche deutsche Stimmen direkt auf dem Orin Nano zu rendern, ohne Cloud-Latenz oder Kosten.
+  * **Piper TTS Integration:** Nutzt das winzige Piper-Modell, um natürliche vietnamesische Stimmen direkt auf dem Orin Nano zu rendern, ohne Cloud-Latenz oder Kosten.
 * **Verbindungen:**
   * **Input:** Liest `finale_prompts.json` (spezifisch den Teil `voiceover_text`).
   * **Output:** Speichert nummerierte Audiodateien (z.B. `szene_01.wav`, `szene_02.wav`) im Projektordner.
