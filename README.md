@@ -66,4 +66,5 @@ Die Pipeline nutzt eine Kombination aus Online-APIs für Trend-Scouting und loka
                                   │
                                   ▼
                         ADOBE PREMIERE (Human-in-the-Loop)
-             Manuelle Regie
+             Manuelle Regie: Dateien in die Timeline ziehen,
+             Übergänge anpassen und finalen Schnitt exportieren.
