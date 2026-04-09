@@ -3,6 +3,68 @@
 Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (TikToks, YouTube Shorts). 
 Optimiert für Edge-Geräte mit begrenztem Arbeitsspeicher (z.B. 8 GB RAM), da alle Services strikt nacheinander ausgeführt werden.
 
+## ⚙️ Detaillierte Service-Funktionen & Verbindungen
+
+Die Pipeline ist als strikte Kette (Daisy-Chain) aufgebaut. Kein Service greift auf die Ressourcen des anderen zu. Die Kommunikation erfolgt ausschließlich über den Austausch von JSON-Dateien.
+
+### 🔍 Service 0: Der Trend-Scout
+Dieser Service ist der strategische Kopf der Pipeline. Er verbindet sich mit dem Internet, um Echtzeit-Daten zu sammeln, verarbeitet diese aber extrem ressourcenschonend.
+
+* **Features:**
+  * **Headless Web-Scraping:** Nutzt Playwright, um unsichtbar Foren (z.B. Reddit `old.reddit.com` für reines Text-Scraping ohne JavaScript-Overhead) zu lesen.
+  * **KI-Kuratierung:** Sendet die Rohdaten an eine externe API (z.B. Gemini Flash/Pro via Free Tier), um das viralste und humorvollste Thema zu identifizieren.
+* **Verbindungen:**
+  * **Input:** Ziel-URLs (z.B. Subreddits, News-Feeds).
+  * **Output:** Generiert die Datei `thema.json` (enthält `titel` und `beschreibung`).
+
+### ✍️ Service 1: The Creator (Die Redaktion)
+Der kreative Motor des Systems. Arbeitet zu 100 % lokal auf dem Jetson.
+
+* **Features:**
+  * **Skript-Erstellung:** Schreibt ein humorvolles Voiceover-Drehbuch auf Basis des ermittelten Themas.
+  * **Szenen-Splitting:** Teilt den Text logisch in 3- bis 5-Sekunden-Abschnitte auf, die ideal für Kurzvideos sind.
+  * **Prompt-Drafting:** Übersetzt die Handlung jeder Szene in erste englische Bild-Prompts.
+* **Verbindungen:**
+  * **Input:** Liest `thema.json` aus Service 0.
+  * **Output:** Generiert die Datei `roh_skript.json` (enthält Array aus Szenen mit `voiceover_text` und `draft_prompt`).
+
+### 🧐 Service 2: The Art Director (Die Qualitätskontrolle)
+Der Wächter über den visuellen Stil. Verhindert, dass Bilder nach billiger KI aussehen.
+
+* **Features:**
+  * **Prompt-Sanitization:** Löscht rigoros Standard-KI-Vokabular (wie "epic", "cinematic", "masterpiece").
+  * **Style-Enforcement:** Reichert die Prompts mit festen Fotografen-Regeln an (z.B. "shot on 35mm film", "natural documentary lighting", "subtle film grain").
+* **Verbindungen:**
+  * **Input:** Liest `roh_skript.json` aus Service 1.
+  * **Output:** Generiert die Datei `finale_prompts.json` (die saubere Bauanleitung für die nächsten Schritte).
+
+### 🖼️ Service 3A: Der Bild-Beschaffer (Adobe Automation)
+Der technische "Hack", um vorhandene Adobe-Credits ohne Enterprise-API zu nutzen.
+
+* **Features:**
+  * **Browser-Fernsteuerung:** Startet Playwright mit gespeichertem User-Profil (Cookies), um den Login-Prozess bei Adobe Firefly zu umgehen.
+  * **Auto-Typing & Download:** Fügt die Prompts iterativ in das Textfeld ein, wartet auf die Generierung und speichert das Ergebnis lokal ab.
+* **Verbindungen:**
+  * **Input:** Liest `finale_prompts.json` (spezifisch den Teil `bild_prompt`).
+  * **Output:** Speichert durchnummerierte Bilddateien (z.B. `szene_01.jpg`, `szene_02.jpg`) im Projektordner.
+
+### 🎙️ Service 3B: Der Ton-Meister (Lokales Text-to-Speech)
+Erzeugt die Sprecherstimme offline und rasend schnell.
+
+* **Features:**
+  * **Piper TTS Integration:** Nutzt das winzige Piper-Modell, um natürliche deutsche Stimmen direkt auf dem Orin Nano zu rendern, ohne Cloud-Latenz oder Kosten.
+* **Verbindungen:**
+  * **Input:** Liest `finale_prompts.json` (spezifisch den Teil `voiceover_text`).
+  * **Output:** Speichert nummerierte Audiodateien (z.B. `szene_01.wav`, `szene_02.wav`) im Projektordner.
+
+## 🛠️ Verwendeter Tech-Stack
+
+* **Python 3.10+**: Die Kern-Logik für alle Microservices.
+* **Playwright**: Für Web-Scraping (Service 0) und Browser-Automatisierung von Adobe Firefly (Service 3A).
+* **Ollama (Llama 3.2 - 3B)**: Lokale LLM-Engine für Text- und Prompt-Generierung. Ideal für Systeme mit limitiertem RAM.
+* **Piper TTS**: Rasante, offline Text-to-Speech Engine für Voiceovers.
+* **Gemini API (Free Tier)**: Für fortgeschrittene Text- und Trend-Analysen ausgelesener Webseiten.
+
 ## 🏗️ System-Architektur
 
 Die Pipeline nutzt eine Kombination aus Online-APIs für Trend-Scouting und lokalen, offline laufenden KI-Modellen für die Texterstellung und Sprachgenerierung, um maximale Privatsphäre und Kostenkontrolle zu gewährleisten. Am Ende steht der manuelle Feinschliff in Adobe Premiere.
