@@ -8,10 +8,12 @@ import json
 import logging
 import re
 
-import ollama
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
 
 from trend_scout.config import (
-    OLLAMA_MODEL,
+    GEMINI_MODEL,
     TOPIC_SELECTION_PROMPT,
     CONTENT_GENERATION_PROMPT,
 )
@@ -48,32 +50,18 @@ def _extract_json(text: str) -> dict | None:
 
 
 def check_connection() -> bool:
-    """Verify that Ollama is running and the model is available."""
-    try:
-        models = ollama.list()
-        available = [m.model for m in models.models]
-        logger.info(f"[Analyzer] Ollama verbunden. Verfügbare Modelle: {available}")
-
-        # Check if our model is available (with or without tag)
-        model_base = OLLAMA_MODEL.split(":")[0]
-        found = any(model_base in m for m in available)
-
-        if not found:
-            logger.error(
-                f"[Analyzer] ✗ Modell '{OLLAMA_MODEL}' nicht gefunden! "
-                f"Bitte 'ollama pull {OLLAMA_MODEL}' ausführen."
-            )
-            return False
-
-        logger.info(f"[Analyzer] ✓ Modell '{OLLAMA_MODEL}' ist bereit")
-        return True
-
-    except Exception as e:
-        logger.error(f"[Analyzer] ✗ Kann Ollama nicht erreichen: {e}")
-        logger.error(
-            "[Analyzer] Bitte sicherstellen, dass Ollama läuft: 'ollama serve'"
-        )
+    """Verify that Gemini API key is set."""
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+    load_dotenv()
+    
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        logger.error("[Analyzer] ✗ GEMINI_API_KEY in .env fehlt!")
         return False
+        
+    genai.configure(api_key=api_key)
+    logger.info(f"[Analyzer] ✓ Gemini API verbunden (Modell: {GEMINI_MODEL})")
+    return True
 
 
 def pick_topic(headlines: list[dict]) -> dict | None:
@@ -99,42 +87,53 @@ def pick_topic(headlines: list[dict]) -> dict | None:
     prompt = TOPIC_SELECTION_PROMPT.format(headlines=headline_text)
 
     logger.info(
-        f"[Analyzer] Schritt 1: Sende {len(headlines)} Headlines an {OLLAMA_MODEL}..."
+        f"[Analyzer] Schritt 1: Sende {len(headlines)} Headlines an {GEMINI_MODEL}..."
     )
 
-    try:
-        response = ollama.chat(
-            model=OLLAMA_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.3},  # low temp for consistent selection
-        )
-
-        response_text = response.message.content
-        logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
-
-        result = _extract_json(response_text)
-        if not result or "index" not in result:
-            logger.error(
-                f"[Analyzer] ✗ Konnte JSON nicht parsen: {response_text[:200]}"
+    import time
+    for attempt in range(3):
+        try:
+            model = genai.GenerativeModel(
+                model_name=GEMINI_MODEL,
+                generation_config=genai.GenerationConfig(
+                    response_mime_type="application/json",
+                    temperature=0.3
+                )
             )
+            response = model.generate_content(prompt)
+            response_text = response.text
+            logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
+
+            result = _extract_json(response_text)
+            if not result or "index" not in result:
+                logger.error(
+                    f"[Analyzer] ✗ Konnte JSON nicht parsen: {response_text[:200]}"
+                )
+                return None
+
+            idx = int(result["index"]) - 1  # convert 1-based to 0-based
+            if idx < 0 or idx >= len(headlines):
+                logger.error(f"[Analyzer] ✗ Ungültiger Index: {result['index']}")
+                return None
+
+            selected = headlines[idx].copy()
+            selected["reason"] = result.get("reason", "")
+
+            logger.info(f"[Analyzer] ✓ Gewählt: '{selected['title']}'")
+            logger.info(f"[Analyzer]   Grund: {selected['reason']}")
+            logger.info(f"[Analyzer]   Quelle: {selected['source']}")
+            return selected
+
+        except Exception as e:
+            error_str = str(e).lower()
+            if "429" in error_str or "quota" in error_str:
+                if attempt < 2:
+                    logger.warning(f"[Analyzer] ⏳ Gemini Rate Limit erreicht. Warte 25 Sekunden... (Versuch {attempt+1}/3)")
+                    time.sleep(25)
+                    continue
+            
+            logger.error(f"[Analyzer] ✗ Fehler bei Themen-Auswahl: {e}")
             return None
-
-        idx = int(result["index"]) - 1  # convert 1-based to 0-based
-        if idx < 0 or idx >= len(headlines):
-            logger.error(f"[Analyzer] ✗ Ungültiger Index: {result['index']}")
-            return None
-
-        selected = headlines[idx].copy()
-        selected["reason"] = result.get("reason", "")
-
-        logger.info(f"[Analyzer] ✓ Gewählt: '{selected['title']}'")
-        logger.info(f"[Analyzer]   Grund: {selected['reason']}")
-        logger.info(f"[Analyzer]   Quelle: {selected['source']}")
-        return selected
-
-    except Exception as e:
-        logger.error(f"[Analyzer] ✗ Fehler bei Themen-Auswahl: {e}")
-        return None
 
 
 def generate_content(topic: dict, article_text: str) -> dict | None:
@@ -164,38 +163,49 @@ def generate_content(topic: dict, article_text: str) -> dict | None:
         article_text=article_text,
     )
 
-    logger.info(f"[Analyzer] Schritt 2: Generiere Content mit {OLLAMA_MODEL}...")
+    logger.info(f"[Analyzer] Schritt 2: Generiere Content mit {GEMINI_MODEL}...")
 
-    try:
-        response = ollama.chat(
-            model=OLLAMA_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.7},  # higher temp for creative content
-        )
-
-        response_text = response.message.content
-        logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
-
-        result = _extract_json(response_text)
-        if not result:
-            logger.error(
-                f"[Analyzer] ✗ Konnte JSON nicht parsen: {response_text[:200]}"
+    import time
+    for attempt in range(3):
+        try:
+            model = genai.GenerativeModel(
+                model_name=GEMINI_MODEL,
+                generation_config=genai.GenerationConfig(
+                    response_mime_type="application/json",
+                    temperature=0.7
+                )
             )
+            response = model.generate_content(prompt)
+            response_text = response.text
+            logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
+
+            result = _extract_json(response_text)
+            if not result:
+                logger.error(
+                    f"[Analyzer] ✗ Konnte JSON nicht parsen: {response_text[:200]}"
+                )
+                return None
+
+            # Validate required fields
+            required = ["title", "description", "solution"]
+            missing = [f for f in required if f not in result]
+            if missing:
+                logger.error(f"[Analyzer] ✗ Fehlende Felder: {missing}")
+                return None
+
+            logger.info(f"[Analyzer] ✓ Content generiert:")
+            logger.info(f"[Analyzer]   Title: {result['title']}")
+            logger.info(f"[Analyzer]   Description: {result['description'][:80]}...")
+            logger.info(f"[Analyzer]   Solution: {result['solution'][:80]}...")
+            return result
+
+        except Exception as e:
+            error_str = str(e).lower()
+            if "429" in error_str or "quota" in error_str:
+                if attempt < 2:
+                    logger.warning(f"[Analyzer] ⏳ Gemini Rate Limit erreicht. Warte 25 Sekunden... (Versuch {attempt+1}/3)")
+                    time.sleep(25)
+                    continue
+
+            logger.error(f"[Analyzer] ✗ Fehler bei Content-Generierung: {e}")
             return None
-
-        # Validate required fields
-        required = ["title", "description", "solution"]
-        missing = [f for f in required if f not in result]
-        if missing:
-            logger.error(f"[Analyzer] ✗ Fehlende Felder: {missing}")
-            return None
-
-        logger.info(f"[Analyzer] ✓ Content generiert:")
-        logger.info(f"[Analyzer]   Title: {result['title']}")
-        logger.info(f"[Analyzer]   Description: {result['description'][:80]}...")
-        logger.info(f"[Analyzer]   Solution: {result['solution'][:80]}...")
-        return result
-
-    except Exception as e:
-        logger.error(f"[Analyzer] ✗ Fehler bei Content-Generierung: {e}")
-        return None
