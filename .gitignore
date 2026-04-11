@@ -24,3 +24,11 @@ env/
 
 # Output
 output/
+
+# Secrets & Credentials
+credentials.json
+client_secret.json
+token.json
+
+# Scratch files
+scratch_quota.py

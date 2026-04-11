@@ -59,6 +59,18 @@ def scrape_headlines() -> list[dict]:
                 page.goto(url, timeout=PAGE_TIMEOUT_MS, wait_until="domcontentloaded")
                 page.wait_for_timeout(2000)  # extra wait for any lazy-loaded text
 
+                # Handle cookie consent modals (GDPR) for German sites
+                consent_sel = target.get("consent_selector")
+                if consent_sel:
+                    try:
+                        consent_btn = page.query_selector(consent_sel)
+                        if consent_btn:
+                            consent_btn.click()
+                            logger.info(f"[Scraper] 🍪 Consent-Modal geschlossen für {name}")
+                            page.wait_for_timeout(1000)
+                    except Exception:
+                        pass  # consent button not found or not clickable – continue
+
                 # Extract all matching headline elements
                 elements = page.query_selector_all(selector)
                 count = 0
