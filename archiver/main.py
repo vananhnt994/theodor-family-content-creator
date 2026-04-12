@@ -102,8 +102,13 @@ def main():
     logger.info(f"✓ Storyboard generiert: {sb_path}")
 
     # 2. ZIP erstellen
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    zip_name = f"Projekt_{timestamp}.zip"
+    video_title = data.get("video_title", "Theodor_Video")
+    import re
+    safe_title = re.sub(r'[^\w\s-]', '', video_title).strip()
+    safe_title = re.sub(r'[-\s]+', '_', safe_title)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    zip_name = f"{safe_title}_{timestamp}.zip"
     zip_path = os.path.join(INPUT_DIR, zip_name)
     
     create_zip(zip_path)
