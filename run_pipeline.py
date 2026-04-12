@@ -2,11 +2,24 @@ import subprocess
 import sys
 import logging
 import time
+import os
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Pipeline")
 
+OUTPUT_FILES = {
+    "Service 0: Trend-Scout": "output/thema.json",
+    "Service 1: The Creator": "output/roh_skript.json",
+    "Service 2: The Art Director": "output/finale_prompts.json"
+}
+
 def run_service(name: str, module_path: str):
+    if name in OUTPUT_FILES and os.path.exists(OUTPUT_FILES[name]):
+        logger.info(f"\n{'='*50}")
+        logger.info(f"⏭  Überspringe {name}: Ergebnis '{OUTPUT_FILES[name]}' existiert bereits.")
+        logger.info(f"{'='*50}")
+        return
+
     logger.info(f"\n{'='*50}")
     logger.info(f"🚀 Starte {name}...")
     logger.info(f"{'='*50}")

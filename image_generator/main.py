@@ -27,7 +27,7 @@ def main():
     
     try:
         vertexai.init(project=project, location=location)
-        model = ImageGenerationModel.from_pretrained("imagen-4.0-fast-generate-001") # Vertex Imagen 3/Fast API Modell
+        model = ImageGenerationModel.from_pretrained("imagen-4.0-fast-generate-001") # Verwende Imagen 4 Flash wie vom Nutzer gewünscht
     except Exception as e:
         logger.error(f"✗ Vertex AI Setup gescheitert. Bitte prüfe deine GOOGLE_APPLICATION_CREDENTIALS: {e}")
         sys.exit(1)
