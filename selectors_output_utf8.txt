@@ -1,0 +1,42 @@
+﻿
+--- Checking VnExpress Sß╗®c Khß╗Åe ---
+Visiting URL: https://vnexpress.net/suc-khoe
+  [Consent] No selector configured
+  Found article link: https://vnexpress.net/nhin-xuat-tinh-co-giup-nam-gioi-sung-hon-5059266.html
+  [Article Body] Selector 'article.fck_detail p.Normal': Found 8 element(s)
+  [Article Body] Sample text: 'Trß║ú lß╗Øi:'...
+
+--- Checking D├ón Tr├¡ G├│c Phß╗Ñ Huynh ---
+Visiting URL: https://dantri.com.vn/giao-duc/goc-phu-huynh.htm
+  [Consent] No selector configured
+  Found article link: https://dantri.com.vn/giao-duc/cong-an-vao-cuoc-vu-sach-tin-hoc-lop-3-co-link-web-den-20260409171628501.htm
+  [Article Body] Selector 'div.singular-content p': Found 0 element(s)
+
+--- Checking L├ám Cha Mß║╣ ---
+Visiting URL: https://lamchame.com
+  [Consent] No selector configured
+  Found article link: https://www.lamchame.com/forum/threads/cutrite-v10.5296031/
+  [Article Body] Selector 'div.entry-content p, div.content-detail p, article p': Found 0 element(s)
+
+--- Checking WebTrß║╗Thãí Sß╗®c Khß╗Åe ---
+Visiting URL: https://www.webtretho.vn/thinh-hanh/suc-khoe-doi-song
+  [Consent] No selector configured
+  [Headline] No link found using selector 'h3 a, a.thread-title, div.thread-item a'
+
+--- Checking WebTrß║╗Thãí L├ám Mß║╣ ---
+Visiting URL: https://www.webtretho.vn/thinh-hanh/lam-me
+  [Consent] No selector configured
+  [Headline] No link found using selector 'h3 a, a.thread-title, div.thread-item a'
+
+--- Checking ZEIT Online Kindererziehung ---
+Visiting URL: https://www.zeit.de/thema/kindererziehung
+  [Consent] No selector configured
+  Found article link: https://www.zeit.de/familie/2026-04/herbert-renz-polster-kindererziehung-autonomie-entwicklung
+  [Article Body] Selector 'div.article__item p.paragraph, div.article-page p': Found 3 element(s)
+  [Article Body] Sample text: 'In seinem neuen Buch "Auf die Fl├╝gel kommt es an" '...
+
+--- Checking Spiegel Erziehung ---
+Visiting URL: https://www.spiegel.de/thema/erziehung/
+  [Consent] Selector 'button[title='Einwilligen'], button.sp_choice_type_11': Found 0 element(s)
+  Found article link: https://www.spiegel.de/kultur/junge-oder-maedchen-warum-der-trend-zum-maedchen-wenig-mit-emanzipation-zu-tun-hat-a-4e241ca9-55fb-4786-84ef-1dcbc6d8f2a9
+  [Article Body] Selector 'article section div[data-word-count] p, div.RichText p': Found 0 element(s)

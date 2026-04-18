@@ -3,6 +3,7 @@ import sys
 import logging
 import time
 import os
+import argparse
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Pipeline")
@@ -39,8 +40,15 @@ def run_service(name: str, module_path: str):
         sys.exit(1)
 
 def main():
+    parser = argparse.ArgumentParser(description="Starte die Theodorbot Pipeline.")
+    parser.add_argument("--channel", type=str, default="betheo", help="Name des zu startenden Channels (ohne .json).")
+    args = parser.parse_args()
+
+    channel_file = f"channels/{args.channel}.json"
+    os.environ["THEODOR_CHANNEL_CONFIG"] = channel_file
+
     logger.info("==================================================")
-    logger.info("   🎬 Theodorbot - Gesamte Pipeline Start         ")
+    logger.info(f"   🎬 Theodorbot - Gesamte Pipeline Start [{args.channel}]")
     logger.info("==================================================")
     
     # Ausführungsreihenfolge entsprechend der Architektur

@@ -1,0 +1,67 @@
+# 🏗 Architektur-Analyse: Multi-Channel Ready
+
+Das aktuelle System funktioniert für "Theodorbot" (Familienalltag, Vietnamesisch) sehr gut. Damit du in Zukunft aber auch völlig andere Kanäle (z. B. "Crypto-News auf Deutsch" oder "Motivation für Studenten auf Englisch") betreiben kannst, ohne den Code kopieren oder umschreiben zu müssen, müssen wir das System **"Multi-Channel" fähig** machen. 
+
+Hier ist meine Analyse, wo wir noch "aufräumen" müssen, und ein Plan, wie wir es tun.
+
+## 🔴 Aktuelle Engpässe ("Hardcoded Bottlenecks")
+
+1. **Die Prompts sind fest verwurschtelt:**
+   - In `creator/config.py` steht festgeschrieben: *"Filme über den Familienalltag"*, *"auf Vietnamesisch"*. 
+   - `art_director/prompt_refiner.py` hat feste Regeln für die Rollen "Mann/Frau/Kind".
+2. **Quellen-URLs sind fixiert:**
+   - `trend_scout/config.py` durchsucht aktuell festeingestellt vietnamesische Eltern-Seiten und Spiegel. 
+3. **Google Drive IDs sind im Code:**
+   - Die Ordner-IDs (Ready to Post, Archiv, SEOs) stehen teilweise direkt im Python-Code (`uploader/main.py` und `archiver/main.py`), nicht in der `.env` oder einer Channel-Config.
+4. **Stimmen-IDs sind im Code:**
+   - ElevenLabs-IDs für Mann/Frau stehen hardcoded im `audio_generator/main.py`.
+
+## 🟢 Das Zielbild: Modulare Architektur ("Channel-Configs")
+
+Das System sollte so umgebaut werden, dass der Code generisch bleibt und wie eine Maschine funktioniert, in die man einfach verschiedene "Kassetten" (Channels) einlegen kann.
+
+### 1. Zentralisierung durch `channels/`
+Wir erstellen einen neuen Ordner `channels/`. Darin liegt für jeden deiner Kanäle eine eigene Konfigurationsdatei (z. B. `theodor.json`).
+Darin steht **alles**, was diesen Kanal ausmacht:
+```json
+{
+  "channel_name": "Theodorbot",
+  "language": "Vietnamesisch",
+  "topic": "Familienalltag und Erziehung",
+  "scraping_sources": ["url1", "url2"],
+  "voices": {
+    "Mann": "6sFKzaJr574YWVu4UuJF",
+    "Frau": "FeJtVBW106P4mvgGebAg"
+  },
+  "drive_folders": {
+    "archive": "...",
+    "ready_to_post": "...",
+    "seos": "1__nQdqRCCVOyupJgU9XmpNOYZ3eluH7o"
+  }
+}
+```
+
+### 2. "Dynamische" Prompts
+Die Skripte (`config.py` in den Microservices) werden so umgeschrieben, dass sie Platzhalter nutzen:
+Statt: *"Du schreibst über den Familienalltag auf Vietnamesisch"*
+Neu: *"Du schreibst über {topic} auf {language}"*
+
+### 3. Anpassung der Start-Skripte
+`run_pipeline.py` und `run_uploader.py` bekommen einen Schalter.
+Du kannst sie dann im Terminal starten mit:
+`python run_pipeline.py --channel theodor`
+oder später:
+`python run_pipeline.py --channel tech_news`
+
+---
+
+## 🛠 Vorgeschlagene Refactoring-Schritte für heute
+
+Wenn du Lust hast, das direkt sauber zu ziehen, schlage ich folgende Schritte vor:
+
+1. **Eine zentrale `config.json` für den Channel "Theodor" anlegen.**
+2. **Drive-IDs in die Config auslagern:** Wir verschieben Ordner wie "SEOs" und "ready_to_post" komplett in die Config, damit in Python keine langen abstrakten IDs mehr stehen.
+3. **Stimmen-IDs auslagern:** Auch ElevenLabs fliegt aus dem Code raus und wandert in die Config.
+4. **Start-Logs anpassen:** Die Skripte lesen die ID ein und begrüßen dich mit dem Namen des Channels, auf dem sie gerade laufen.
+
+*Sollen wir diesen Plan jetzt so ausführen oder willst du sogar gleich die Sprache und Themen in den Prompts dynamisch machen?*

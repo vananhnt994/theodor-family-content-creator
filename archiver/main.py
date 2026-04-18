@@ -11,6 +11,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from dotenv import load_dotenv
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from channel_config import load_channel_config
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Archiver")
 
@@ -57,7 +61,7 @@ def get_oauth_credentials():
             token.write(creds.to_json())
     return creds
 
-def upload_to_drive(file_path: str, filename: str, folder_id: str):
+def upload_to_drive(file_path: str, filename: str, folder_id: str, mimetype: str = "application/zip"):
     creds = get_oauth_credentials()
     service = build("drive", "v3", credentials=creds)
 
@@ -65,7 +69,7 @@ def upload_to_drive(file_path: str, filename: str, folder_id: str):
         "name": filename,
         "parents": [folder_id] if folder_id else []
     }
-    media = MediaFileUpload(file_path, mimetype="application/zip", resumable=True)
+    media = MediaFileUpload(file_path, mimetype=mimetype, resumable=True)
     file = service.files().create(body=file_metadata, media_body=media, fields="id, webViewLink").execute()
     return file
 
@@ -108,22 +112,42 @@ def main():
     safe_title = re.sub(r'[-\s]+', '_', safe_title)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    zip_name = f"{safe_title}_{timestamp}.zip"
+    base_name = f"{timestamp}_{safe_title}"
+    zip_name = f"{base_name}.zip"
     zip_path = os.path.join(INPUT_DIR, zip_name)
     
     create_zip(zip_path)
     logger.info(f"✓ ZIP-Archiv gepackt: {zip_path}")
+    
+    # 2.5 SEO Metadaten extrahieren
+    seo_data = data.get("seo", {})
+    seo_name = f"{base_name}_SEO.json"
+    seo_path = os.path.join(INPUT_DIR, seo_name)
+    with open(seo_path, "w", encoding="utf-8") as f:
+        json.dump(seo_data, f, ensure_ascii=False, indent=2)
+    logger.info(f"✓ SEO-Datei gepackt: {seo_path}")
 
     # 3. Upload zu Google Drive
-    folder_id = os.environ.get("DRIVE_FOLDER_ID")
+    channel_cfg = load_channel_config()
+    drive_folders = channel_cfg.get("drive_folders", {})
+    
+    folder_id = drive_folders.get("archive")
     if not folder_id:
-        logger.warning("⚠ DRIVE_FOLDER_ID fehlt in der .env. Lade ins Hauptverzeichnis hoch...")
+        folder_id = os.environ.get("DRIVE_FOLDER_ID") # Fallback
+        logger.warning("⚠ Archiv-Ordner fehlt in Config. Nutze Fallback...")
 
     try:
-        logger.info("☁️  Lade Archiv zu Google Drive hoch...")
-        file_res = upload_to_drive(zip_path, zip_name, folder_id)
-        logger.info(f"✓ Erfolgreich hochgeladen! Link: {file_res.get('webViewLink')}")
+        logger.info("☁️  Lade Archiv und SEO zu Google Drive hoch...")
+        file_res = upload_to_drive(zip_path, zip_name, folder_id, mimetype="application/zip")
+        logger.info(f"✓ Zip Upload erfolgreich! Link: {file_res.get('webViewLink')}")
         
+        seo_folder_id = drive_folders.get("seos")
+        if seo_folder_id:
+            seo_res = upload_to_drive(seo_path, seo_name, seo_folder_id, mimetype="application/json")
+            logger.info(f"✓ SEO Upload in SEOs-Ordner erfolgreich! Link: {seo_res.get('webViewLink')}")
+        else:
+            logger.warning("⚠ SEOs-Ordner fehlt in Config!")
+            
         # 4. Ordner aufräumen
         cleanup_output_dir()
     except Exception as e:

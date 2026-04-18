@@ -1,0 +1,80 @@
+﻿
+--- html_dumps\dantri.html ---
+Dantri parent class: ['dt-font-arial', 'dt-font-normal', 'dt-text-black-mine', 'dt-text-lg', 'dt-leading-160', '[&>*:not(:last-child)]:dt-mb-6']
+Dantri parent class: ['dt-font-arial', 'dt-font-normal', 'dt-text-black-mine', 'dt-text-lg', 'dt-leading-160', '[&>*:not(:last-child)]:dt-mb-6']
+Dantri parent class: None
+Dantri parent class: ['dt-font-arial', 'dt-font-normal', 'dt-text-black-mine', 'dt-text-lg', 'dt-leading-160', '[&>*:not(:last-child)]:dt-mb-6']
+Dantri parent class: ['dt-font-arial', 'dt-font-normal', 'dt-text-black-mine', 'dt-text-lg', 'dt-leading-160', '[&>*:not(:last-child)]:dt-mb-6']
+
+--- html_dumps\lamchame.html ---
+Lamchame parent class: ['titleBar']
+Lamchame parent class: None
+
+--- html_dumps\spiegel_home.html ---
+Spiegel button: None ['text-white', 'dark:text-shade-lightest', 'leading-none', 'outline-focus', 'transition-fade', 'duration-300', 'ease-out', 'lg:absolute', 'lg:h-full', 'lg:top-0', 'lg:invisible', 'lg:opacity-none', 'lg:-ml-4', 'md:absolute', 'md:h-full', 'md:top-0', 'md:invisible', 'md:opacity-none', 'md:-ml-4'] None Men³ ÷ffnen
+Spiegel button: None ['flex', 'items-center', 'h-full', 'text-black', 'dark:text-shade-lightest', 'text-black', 'dark:text-shade-lightest', 'leading-none', 'text-s', 'px-16', 'outline-focus'] None Men³
+Spiegel button: Suche starten ['absolute', 'top-0', 'right-4', 'bottom-0', 'w-48'] None Suche starten
+Spiegel button: None ['absolute', 'top-0', 'bottom-0', 'right-0', 'focus-outline', 'flex', 'items-center', 'text-black', 'dark:text-shade-lightest', 'text-s', 'px-16'] None Suche ÷ffnen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: Zur Merkliste hinzuf³gen ['flex', 'hover:opacity-distinct', 'text-black', 'dark:text-shade-lightest'] None Zur Merkliste hinzuf³gen
+Spiegel button: None ['sm:flex', 'sm:justify-between', 'text-white', 'dark:text-shade-lightest', 'font-brandUI', 'font-extrabold', 'text-l', 'leading-tight', 'sm:pt-18', 'sm:pb-16', 'outline-focus'] None Auto
+Spiegel button: None ['sm:flex', 'sm:justify-between', 'text-white', 'dark:text-shade-lightest', 'font-brandUI', 'font-extrabold', 'text-l', 'leading-tight', 'sm:pt-18', 'sm:pb-16', 'outline-focus'] None Job
+Spiegel button: None ['sm:flex', 'sm:justify-between', 'text-white', 'dark:text-shade-lightest', 'font-brandUI', 'font-extrabold', 'text-l', 'leading-tight', 'sm:pt-18', 'sm:pb-16', 'outline-focus'] None Finanzen
+Spiegel button: None ['sm:flex', 'sm:justify-between', 'text-white', 'dark:text-shade-lightest', 'font-brandUI', 'font-extrabold', 'text-l', 'leading-tight', 'sm:pt-18', 'sm:pb-16', 'outline-focus'] None Freizeit
+Spiegel button: Suche starten ['absolute', 'top-0', 'right-0', 'bottom-0', 'w-48'] None Suche starten
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Politik aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Ausland aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Panorama aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Sport aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Wirtschaft aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Wissenschaft aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Netzwelt aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Kultur aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Leben aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Effilee aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Geschichte aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Mobilitõt aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Tests aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker', 'outline-focus'] None Men³ Marktplatz aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker', 'outline-focus'] None Men³ Lotto aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker', 'outline-focus'] None Men³ Streaming Guide aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker', 'outline-focus'] None Men³ Kaufradar aufklappen
+Spiegel button: None ['flex', 'items-center', 'py-16', 'px-20', 'h-56', 'w-56'] None 
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ SPIEGEL-Heft aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Alle Magazine aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ SPIEGEL Media aufklappen
+Spiegel button: None ['text-shade-light', 'dark:text-shade-dark', 'text-base', 'outline-focus', 'hover:text-primary-dark', 'focus:text-primary-darker', 'active:text-primary-darker'] None Men³ Services aufklappen
+Spiegel button: Audio Player maximieren ['shrink-0', 'mr-12', 'outline-focus'] None 
+Spiegel button: Wiedergabe fortsetzen ['underline', 'whitespace-nowrap'] None 
+Spiegel button: None ['lg:px-12', 'md:px-12', 'sm:px-6', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: Wiedergabe beenden ['flex', 'h-48', 'items-center', 'lg:px-12', 'md:px-12', 'sm:px-6', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: Audio Player minimieren ['text-right', 'pt-16', 'pb-12', 'lg:pr-24', 'md:pr-24', 'sm:pr-16', 'w-full', 'outline-focus', 'text-sec2-dark', 'dark:text-shade-lightest'] None 
+Spiegel button: Wiedergabegeschwindigkeit õndern ['border', 'font-bold', 'font-sansUI', 'h-24', 'px-6', 'rounded-oval', 'text-xs', 'border-sec2-dark', 'dark:border-shade-lighter', 'hover:border-sec2-darker', 'dark:hover:border-shade-lightest', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: 15 Sekunden zur³ck ['lg:px-12', 'md:px-12', 'sm:pr-12', 'lg:mx-12', 'md:mx-12', 'sm:mr-12', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: None ['shrink-0', 'w-48', 'h-48', 'rounded-circle', 'px-12', 'bg-sec2-dark', 'dark:bg-sec2-lightest', 'hover:bg-sec2-darker', 'dark:hover:bg-shade-lightest', 'text-white', 'dark:text-sec2-dark'] None 
+Spiegel button: 30 Sekunden vor ['lg:pr-12', 'pl-12', 'ml-12', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: None ['md:hidden', 'sm:hidden', 'px-12', 'text-sec2-dark', 'dark:text-shade-lighter', 'hover:text-sec2-darker', 'dark:hover:text-shade-lightest'] None 
+Spiegel button: None ['text-black', 'dark:text-shade-lightest', 'outline-focus', 'cursor-pointer', 'leading-none'] None 
+Spiegel button: Auf diesem Gerõt weiterlesen ['inline-flex', 'items-center', 'font-bold', 'font-sansUI', 'rounded', 'bg-primary-base', 'dark:bg-dm-primary-base', 'text-white', 'dark:text-shade-lightest', 'hover:bg-primary-dark', 'focus:bg-primary-darker', 'dark:disabled:bg-shade-darker', 'dark:disabled:text-shade-base', 'px-16', 'min-h-44', 'gap-8', 'disabled:cursor-not-allowed', 'disabled:bg-shade-lighter', 'disabled:text-shade-dark'] None 
+Spiegel button: None ['text-white', 'dark:text-shade-lightest', 'block', 'leading-none', 'outline-focus'] None 
+Spiegel button: None ['text-white', 'dark:text-shade-lightest', 'block', 'leading-none', 'outline-focus'] None 
+
+--- html_dumps\webtretho_home.html ---

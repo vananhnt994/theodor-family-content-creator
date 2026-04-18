@@ -117,6 +117,7 @@ def run():
         "mood": voiceover.get("mood", ""),
         "total_duration_seconds": total_duration,
         "scene_count": len(scenes),
+        "seo": voiceover.get("seo", {}),
         "scenes": scenes,
         "source_thema": {
             "title": thema.get("title", ""),
@@ -143,6 +144,7 @@ def run():
     logger.info(f"   Stimmung:     {output['mood']}")
     logger.info(f"   Szenen:       {output['scene_count']}")
     logger.info(f"   Gesamtdauer:  ~{output['total_duration_seconds']}s")
+    logger.info(f"   SEO-Hashtags: {output.get('seo', {}).get('hashtags', 'Fehlt')}")
     logger.info(f"   Generiert:    {output['generated_at']}")
     logger.info("-" * 40)
     for s in scenes:

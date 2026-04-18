@@ -1,10 +1,15 @@
 import json
 import logging
 import os
+import sys
 import google.generativeai as genai
 import re
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from channel_config import load_channel_config
 from art_director.config import GEMINI_MODEL, SYSTEM_PROMPT
+
+channel_cfg = load_channel_config()
 
 logger = logging.getLogger(__name__)
 
@@ -41,27 +46,31 @@ def refine_prompts(scenes: list[dict]) -> list[dict] | None:
     
     genai.configure(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
     
+    available_voices = list(channel_cfg.get("voices", {"Mann": "", "Frau": ""}).keys())
+    voices_str = ", ".join([f"'{v}'" for v in available_voices])
+    default_voice = available_voices[0] if available_voices else "Unbekannt"
+
     prompt = f"""Hier sind die Bild-Entwürfe für die einzelnen Szenen und der Voiceover-Text:
 
 ```json
-{json.dumps([{"scene_number": s["scene_number"], "voiceover_text": s.get("voiceover_text", ""), "draft_prompt": s.get("draft_prompt", "")} for s in scenes], indent=2)}
+{{json.dumps([{"scene_number": s["scene_number"], "voiceover_text": s.get("voiceover_text", ""), "draft_prompt": s.get("draft_prompt", "")} for s in scenes], indent=2)}}
 ```
 
 AUFGABE: 
 1. Überarbeite jeden `draft_prompt` in einen neuen `final_prompt`, unter strikter Einhaltung deiner System-Prompt-Regeln (Sanitization, hyper-expressive faces, close-up shot, style-consistency).
-2. Analysiere das gesamte Skript (Tonfall, Text und Geschwindigkeit) und bestimme aus welcher Perspektive die Geschichte erzählt wird. Entscheide, welche Stimme für das Voiceover geeignet ist: 'Mann' (für kraftvolle/ernste Erzähler oder Väter), 'Frau' (für sanfte/nachdenkliche Erzähler oder Mütter) oder 'Kind' (wenn die Geschichte aus der Sicht eines Kindes erzählt wird).
+2. Analysiere das gesamte Skript (Tonfall, Text und Geschwindigkeit) und bestimme aus welcher Perspektive die Geschichte erzählt wird. Entscheide, welche Stimme für das Voiceover geeignet ist. Du DARFST NUR EINE DIESER STIMMEN WÄHLEN: {voices_str}.
 
 Gib nur gültiges JSON im folgenden Format zurück:
 
-{{
-  "selected_voice": "Mann", 
+{{{{
+  "selected_voice": "{default_voice}", 
   "refined_scenes": [
-    {{
+    {{{{
       "scene_number": 1,
       "final_prompt": "<DEIN ÜBERARBEITETER PROMPT IN ENGLISCH>"
-    }}
+    }}}}
   ]
-}}
+}}}}
 """
 
     logger.info(f"[Art Director] 🎨 Verfeinere {len(scenes)} Prompts mit {GEMINI_MODEL}...")

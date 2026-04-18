@@ -1,0 +1,67 @@
+{
+  "channel_name": "BeTheo",
+  "youtube_url": "https://www.youtube.com/@betheo-family",
+  "language": "Vietnamesisch",
+  "topic": "Familienalltag, Erziehung, Psychologie",
+  "scraping_sources": [
+    {
+      "name": "VnExpress Sức Khỏe",
+      "url": "https://vnexpress.net/suc-khoe",
+      "headline_selector": "h3.title-news a, h2.title-news a",
+      "article_body_selector": "article.fck_detail p.Normal"
+    },
+    {
+      "name": "Dân Trí Góc Phụ Huynh",
+      "url": "https://dantri.com.vn/giao-duc/goc-phu-huynh.htm",
+      "headline_selector": "h3.article-title a, h2.article-title a",
+      "article_body_selector": "article.dt-flex p, div.dt-font-arial p, article p, div.singular-content p"
+    },
+    {
+        "name": "Làm Cha Mẹ",
+        "url": "https://lamchame.com",
+        "headline_selector": "h2 a, h3 a",
+        "article_body_selector": "div.message-content p, div.bbWrapper, div.entry-content p, article p"
+    },
+    {
+        "name": "WebTrẻThơ Sức Khỏe",
+        "url": "https://www.webtretho.vn/thinh-hanh/suc-khoe-doi-song",
+        "headline_selector": "h3 a, a[href*='/f/'], a[href*='/p/']",
+        "article_body_selector": "div.post-content p, div.message-body p, article p"
+    },
+    {
+        "name": "WebTrẻThơ Làm Mẹ",
+        "url": "https://www.webtretho.vn/thinh-hanh/lam-me",
+        "headline_selector": "h3 a, a[href*='/f/'], a[href*='/p/']",
+        "article_body_selector": "div.post-content p, div.message-body p, article p"
+    },
+    {
+        "name": "BBC Health",
+        "url": "https://www.bbc.com/health",
+        "headline_selector": "h2[data-testid='card-headline'], h2 a, h3 a",
+        "article_body_selector": "article p, div[data-component='text-block'] p, div.text p"
+    },
+    {
+        "name": "Kinderzeit",
+        "url": "https://www.kinderzeit.de/kinderzeit.html",
+        "headline_selector": "h2 a, h3 a, .header a",
+        "article_body_selector": "article p, .ce_text p, .text p, .news_full p"
+    },
+    {
+        "name": "1-2-Family Nachrichten",
+        "url": "https://www.1-2-family.de/nachrichten/",
+        "headline_selector": "h2.entry-title a, h3.entry-title a, h2 a, h3 a",
+        "article_body_selector": "article p, .entry-content p, .post-content p"
+    }
+  ],
+  "voices": {
+    "Mann": "6sFKzaJr574YWVu4UuJF",
+    "Frau": "FeJtVBW106P4mvgGebAg",
+    "Kind": "FeJtVBW106P4mvgGebAg"
+  },
+  "drive_folders": {
+    "archive": "1JCj_Wt3hbjrDsUJ7QkjXeGinfAikvZ_b",
+    "ready_to_post": "161LJ7-NJcbgni5Ym1O-JHWHElHtQPJHZ",
+    "seos": "1__nQdqRCCVOyupJgU9XmpNOYZ3eluH7o",
+    "uploaded_archiv": "1FRHmRPR0viD6zy5vKezK-ulGlTH9ONX-"
+  }
+}
