@@ -5,6 +5,9 @@ import sys
 from elevenlabs.client import ElevenLabs
 from dotenv import load_dotenv
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from channel_config import load_channel_config
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("AudioGenerator")
 
@@ -34,14 +37,11 @@ def main():
     with open(INPUT_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         
-    selected_voice = data.get("selected_voice", "Mann")
-    voice_mapping = {
-        "MANN": "6sFKzaJr574YWVu4UuJF",
-        "FRAU": "FeJtVBW106P4mvgGebAg",
-        "KIND": "FeJtVBW106P4mvgGebAg", # Placeholder, wird später aktualisiert
-    }
+    channel_cfg = load_channel_config()
+    voice_mapping = channel_cfg.get("voices", {})
     
-    voice_id = voice_mapping.get(selected_voice.upper(), "6sFKzaJr574YWVu4UuJF") # Default Mann
+    selected_voice = data.get("selected_voice", list(voice_mapping.keys())[0] if voice_mapping else "Mann")
+    voice_id = voice_mapping.get(selected_voice, "6sFKzaJr574YWVu4UuJF") # Default Fallback
         
     scenes = data.get("scenes", [])
     
