@@ -49,12 +49,12 @@ def refine_prompts(scenes: list[dict]) -> list[dict] | None:
 
 AUFGABE: 
 1. Überarbeite jeden `draft_prompt` in einen neuen `final_prompt`, unter strikter Einhaltung deiner System-Prompt-Regeln (Sanitization, hyper-expressive faces, close-up shot, style-consistency).
-2. Analysiere das gesamte Skript (Tonfall, Text und Geschwindigkeit). Entscheide, welche ElevenLabs Stimme besser für das Voiceover geeignet ist: 'Vien' (weibliche Stimme, perfekt für sanfte/nachdenkliche Themen) oder 'Anh' (männliche Stimme, perfekt für kraftvolle/ernste Themen).
+2. Analysiere das gesamte Skript (Tonfall, Text und Geschwindigkeit) und bestimme aus welcher Perspektive die Geschichte erzählt wird. Entscheide, welche Stimme für das Voiceover geeignet ist: 'Mann' (für kraftvolle/ernste Erzähler oder Väter), 'Frau' (für sanfte/nachdenkliche Erzähler oder Mütter) oder 'Kind' (wenn die Geschichte aus der Sicht eines Kindes erzählt wird).
 
 Gib nur gültiges JSON im folgenden Format zurück:
 
 {{
-  "selected_voice": "Vien", 
+  "selected_voice": "Mann", 
   "refined_scenes": [
     {{
       "scene_number": 1,
@@ -86,7 +86,7 @@ Gib nur gültiges JSON im folgenden Format zurück:
             return None, None
             
         refined_list = result["refined_scenes"]
-        selected_voice = result.get("selected_voice", "Anh")
+        selected_voice = result.get("selected_voice", "Mann")
         
         scene_map = {s["scene_number"]: s["final_prompt"] for s in refined_list}
         

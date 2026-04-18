@@ -40,6 +40,12 @@ STRIKTE REGELN:
 4. Stille (Ma): Das Voiceover darf nicht ununterbrochen durchreden. Füge an emotionalen Stellen mindestens drei Mal das Tag <break time="2.0s" /> in den vietnamesischen Text ein, um Pausen zu erzwingen.
 5. Hook: Beginne direkt in der Handlung (In medias res) mit einem starken Bild. Keine Begrüßung.
 6. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. Benenne die Charaktere darin (z.B. "mother Akira", "boy Ren").
+7. SEO:
+[SEO-START]
+Titel: [Ein klickstarker, neugierig machender Titel auf Vietnamesisch, der das Haupt-Keyword enthält, max. 60 Zeichen]
+Beschreibung: [Eine SEO-optimierte Videobeschreibung. Die ersten zwei Sätze müssen die wichtigsten Suchbegriffe von Eltern zu dem Thema bzw Inhalt enthalten.]
+Hashtags: [Exakt 5 spitze, vietnamesische Hashtags, die exakt zur Nische passen, getrennt durch Leerzeichen]
+[SEO-ENDE]
 
 Halte dich bei der Formatierung exakt an die im jeweiligen Schritt geforderte JSON-Struktur!
 """

@@ -34,34 +34,41 @@ def main():
     with open(INPUT_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         
-    selected_voice = data.get("selected_voice", "Anh")
-    voice_id_env_key = f"ELEVENLABS_VOICE_ID_{selected_voice.upper()}"
-    voice_id = os.environ.get(voice_id_env_key)
+    selected_voice = data.get("selected_voice", "Mann")
+    voice_mapping = {
+        "MANN": "6sFKzaJr574YWVu4UuJF",
+        "FRAU": "FeJtVBW106P4mvgGebAg",
+        "KIND": "FeJtVBW106P4mvgGebAg", # Placeholder, wird später aktualisiert
+    }
     
-    if not voice_id:
-        logger.warning(f"⚠ Voice ID für {selected_voice} nicht in .env gefunden. Nutze Default Anh.")
-        voice_id = os.environ.get("ELEVENLABS_VOICE_ID_ANH", "ywBZEqUhld86Jeajq94o")
+    voice_id = voice_mapping.get(selected_voice.upper(), "6sFKzaJr574YWVu4UuJF") # Default Mann
         
     scenes = data.get("scenes", [])
-    has_error = False
+    
+    # 1. Alle Texte der Szenen kombinieren
+    full_text_fragments = []
     for scene in scenes:
-        sn = scene.get("scene_number")
-        text = scene.get("voiceover_text")
-        
-        if not text: continue
-        
-        # Speichern als mp3 anstelle von wav da ElevenLabs nativ komprimiertes mp3 liefert
-        out_path = os.path.join(OUTPUT_DIR, f"Szene_{sn:02d}.mp3")
-        if os.path.exists(out_path):
-            logger.info(f"Szene {sn} Audio existiert bereits. Überspringe...")
-            continue
+        text = scene.get("voiceover_text", "").strip()
+        if text:
+            full_text_fragments.append(text)
             
-        logger.info(f"🎙️ Generiere Voiceover für Szene {sn} mit {selected_voice}...")
+    if not full_text_fragments:
+        logger.error("✗ Kein Voiceover-Text in den Szenen gefunden.")
+        sys.exit(1)
+        
+    # Texte mit kleinem Abstand (1 Sekunde) verbinden.
+    full_text = ' <break time="1.0s" /> '.join(full_text_fragments)
+    
+    out_path = os.path.join(OUTPUT_DIR, "Voiceover_Finale.mp3")
+    if os.path.exists(out_path):
+        logger.info(f"Audio existiert bereits ({out_path}). Überspringe Generierung...")
+    else:
+        logger.info(f"🎙️ Generiere gemeinsames Voiceover mit Stimme '{selected_voice}' (ID: {voice_id})...")
         try:
             audio_generator = client.text_to_speech.convert(
                 voice_id=voice_id,
                 output_format="mp3_44100_128",
-                text=text,
+                text=full_text,
                 model_id="eleven_turbo_v2_5",
             )
             with open(out_path, "wb") as f_out:
@@ -69,15 +76,12 @@ def main():
                     if chunk:
                         f_out.write(chunk)
             
-            logger.info(f"✓ Audio gespeichert: {out_path}")
+            logger.info(f"✓ Komplettes Audio gespeichert: {out_path}")
         except Exception as e:
-            logger.error(f"✗ Fehler bei Szene {sn} Audio: {e}")
+            logger.error(f"✗ Fehler bei der Audio Generierung: {e}")
             if os.path.exists(out_path):
                 os.remove(out_path)
-            has_error = True
-
-    if has_error:
-        sys.exit(1)
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
