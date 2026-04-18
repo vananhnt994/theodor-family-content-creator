@@ -53,7 +53,10 @@ Hãy chọn MỘT tiêu đề TỐT NHẤT để làm video ngắn (TikTok/YouTu
 4. KHÔNG chọn quảng cáo, bài PR, hoặc tin tức chính trị tiêu cực
 
 Trả lời CHỈ bằng JSON với format sau, KHÔNG thêm text nào khác:
-{{{{"index": <số thứ tự của tiêu đề được chọn>, "reason": "<lý do ngắn gọn bằng {channel_cfg.get('language', 'Vietnamesisch')}>"}}}}
+{{
+  "index": <số thứ tự của tiêu đề được chọn>, 
+  "reason": "<lý do ngắn gọn bằng {channel_cfg.get('language', 'Vietnamesisch')}>"
+}}
 """
 
 CONTENT_GENERATION_PROMPT = f"""Bạn là một nhà sáng tạo nội dung chuyên nghiệp cho TikTok/YouTube Shorts về chủ đề {channel_cfg.get('topic', 'gia đình')}.
@@ -76,7 +79,11 @@ QUAN TRỌNG: Tất cả nội dung output PHẢI bằng {channel_cfg.get('langu
 Giọng văn: ấm áp, gần gũi, như một người bạn chia sẻ kinh nghiệm.
 
 Trả lời CHỈ bằng JSON với format sau, KHÔNG thêm text nào khác:
-{{{{"title": "...", "description": "...", "solution": "..."}}}}
+{{
+  "title": "...", 
+  "description": "...", 
+  "solution": "..."
+}}
 """
 
 # ---------------------------------------------------------------------------
