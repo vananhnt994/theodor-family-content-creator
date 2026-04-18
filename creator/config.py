@@ -74,15 +74,15 @@ ANFORDERUNGEN:
 5. Ende mit einem starken Moment
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
-{{{{
+{{
   "mood": "<stimmung des videos, z.B.: warm und nachdenklich>",
   "voiceover_full": "<der komplette Voiceover-Text als ein zusammenhängender Text, auf {channel_cfg.get('language', 'Vietnamesisch')}, ca. {{duration}} Sekunden gesprochen>",
-  "seo": {{{{
+  "seo": {{
     "title": "<Ein klickstarker, neugierig machender Titel auf {channel_cfg.get('language', 'Vietnamesisch')}, max. 60 Zeichen>",
-    "description": "<SEO-optimierte Videobeschreibung. Erste zwei Sätze mit den wichtigsten Suchbegriffen>",
-    "hashtags": "<Exakt 5 spitze Hashtags auf {channel_cfg.get('language', 'Vietnamesisch')}, durch Leerzeichen getrennt>"
-  }}}}
-}}}}"""
+    "description": "<SEO-optimierte Videobeschreibung. Erste hai Sätze mit den wichtigsten Suchbegriffen>",
+    "hashtags": "<Exakt 5 spitze, Hashtags auf {channel_cfg.get('language', 'Vietnamesisch')}, durch Leerzeichen getrennt>"
+  }}
+}}"""
 
 
 # ---------------------------------------------------------------------------
@@ -108,14 +108,14 @@ Für JEDE Szene:
 STIMMUNG DES VIDEOS: {{mood}}
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
-{{{{
+{{
   "scenes": [
-    {{{{
+    {{
       "scene_number": 1,
       "voiceover_text": "...",
       "duration_seconds": 5,
       "emotion": "...",
       "draft_prompt": "..."
-    }}}}
+    }}
   ]
-}}}}"""
+}}"""
