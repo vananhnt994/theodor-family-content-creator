@@ -47,7 +47,7 @@ STRIKTE REGELN:
 3. Szenen: Erstelle exakt 6 bis 8 chronologische visuelle Szenen.
 4. Stille (Ma): Das Voiceover darf nicht ununterbrochen durchreden. Füge an emotionalen Stellen mindestens drei Mal das Tag <break time="2.0s" /> in den {channel_cfg.get('language', 'vietnamesischen')} Text ein, um Pausen zu erzwingen.
 5. Hook: Beginne direkt in der Handlung (In medias res) mit einem starken Bild. Keine Begrüßung.
-6. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. Benenne die Charaktere darin.
+6. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. GIB DEN CHARAKTEREN KEINE NAMEN! Erzähle die Geschichte immer aus der Perspektive von Mama, Papa, dem Kind oder einer Lehrkraft (z.B. "a mother", "a 5-year-old girl").
 
 Halte dich bei der Formatierung exakt an die im jeweiligen Schritt geforderte JSON-Struktur!
 """
@@ -74,15 +74,15 @@ ANFORDERUNGEN:
 5. Ende mit einem starken Moment
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
-{{
+{{{{
   "mood": "<stimmung des videos, z.B.: warm und nachdenklich>",
   "voiceover_full": "<der komplette Voiceover-Text als ein zusammenhängender Text, auf {channel_cfg.get('language', 'Vietnamesisch')}, ca. {{duration}} Sekunden gesprochen>",
-  "seo": {{
+  "seo": {{{{
     "title": "<Ein klickstarker, neugierig machender Titel auf {channel_cfg.get('language', 'Vietnamesisch')}, max. 60 Zeichen>",
     "description": "<SEO-optimierte Videobeschreibung. Erste hai Sätze mit den wichtigsten Suchbegriffen>",
     "hashtags": "<Exakt 5 spitze, Hashtags auf {channel_cfg.get('language', 'Vietnamesisch')}, durch Leerzeichen getrennt>"
-  }}
-}}"""
+  }}}}
+}}}}"""
 
 
 # ---------------------------------------------------------------------------
@@ -99,23 +99,21 @@ Für JEDE Szene:
 2. "duration_seconds": Geschätzte Sprechdauer (zwischen {{min_sec}} und {{max_sec}} Sekunden)
 3. "emotion": Die Emotion dieser Szene (z.B. "curious", "melancholic", "hopeful", "warm", "playful")
 4. "draft_prompt": Ein englischer Bild-Prompt für ein passendes Bild. WICHTIG für Bild-Stil und Konsistenz:
-   - CHARACTER CONSISTENCY: Lege für Charaktere GANZ GENAUE, feste visuelle Eigenschaften fest (Alter, Kleidung, Kleiderfarbe, Frisur). Verwende EXAKT DIESELBE Beschreibung in JEDEM Prompt, in dem diese Person auftaucht! Ohne diese Regel wechselt die KI sonst das Aussehen in jedem Bild.
-   - Bevorzuge süße, realistische, authentische Szenen und halte den Hintergrund detailliert.
-   - Manchmal darf es auch im sanften Ghibli/Aquarell-Stil sein, wenn die Stimmung es verlangt.
-   - NIEMALS: übertrieben fancy, künstlich perfekt, oder unrealistisch.
+   - CHARACTER CONSISTENCY: Lege für Charaktere GANZ GENAUE, feste visuelle Eigenschaften fest (Rolle, Alter, Kleidung, Kleiderfarbe, Frisur). GIB DEN CHARAKTEREN KEINE NAMEN (verwende stattdessen "a mother", "a father", "a 5-year-old girl", "a teacher"). Verwende EXAKT DIESELBE detaillierte Beschreibung (z.B. "a 5-year-old Vietnamese girl with short black hair wearing a pink dress") in JEDEM Prompt, in dem diese Person auftaucht! Erwähne auch in Detailaufnahmen IMMER den Charakter und das Outfit (z.B. statt nur "Button" schreibe "The button on the pink dress of a 5-year-old girl...").
+   - ALL scenes MUST be in Studio Ghibli anime style. Do NOT use realistic or photographic styles.
    - Warme Farbtöne, weiches Licht, natürliche Atmosphäre.
 
 STIMMUNG DES VIDEOS: {{mood}}
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
-{{
+{{{{
   "scenes": [
-    {{
+    {{{{
       "scene_number": 1,
       "voiceover_text": "...",
       "duration_seconds": 5,
       "emotion": "...",
       "draft_prompt": "..."
-    }}
+    }}}}
   ]
-}}"""
+}}}}"""

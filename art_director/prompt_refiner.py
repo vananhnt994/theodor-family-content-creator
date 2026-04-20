@@ -60,6 +60,7 @@ def refine_prompts(scenes: list[dict]) -> list[dict] | None:
 
 AUFGABE: 
 1. Überarbeite jeden `draft_prompt` in einen neuen `final_prompt`, unter strikter Einhaltung deiner System-Prompt-Regeln (Sanitization, hyper-expressive faces, close-up shot, style-consistency).
+WICHTIG FÜR KONSISTENZ: Identifiziere die Charaktere und sorge dafür, dass IHRE VOLLE BESCHREIBUNG (Rolle, Alter, Kleidung, Aussehen) in JEDEM finalen Prompt wiederholt wird! VERWENDE KEINE NAMEN (wie "Mai"). Ein Prompt für ein Detail (wie ein Knopf) muss z.B. lauten: "The button on the pink dress of a 5-year-old girl with short black hair".
 2. Analysiere das gesamte Skript (Tonfall, Text und Geschwindigkeit) und bestimme aus welcher Perspektive die Geschichte erzählt wird. Entscheide, welche Stimme für das Voiceover geeignet ist. Du DARFST NUR EINE DIESER STIMMEN WÄHLEN: {voices_str}.
 
 Gib nur gültiges JSON im folgenden Format zurück:
