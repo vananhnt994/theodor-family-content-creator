@@ -69,7 +69,7 @@ def main():
                 voice_id=voice_id,
                 output_format="mp3_44100_128",
                 text=full_text,
-                model_id="eleven_turbo_v2_5",
+                model_id="eleven_v3",
             )
             with open(out_path, "wb") as f_out:
                 for chunk in audio_generator:
