@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from datetime import datetime
 
 from art_director.config import INPUT_DIR, INPUT_FILENAME, OUTPUT_DIR, OUTPUT_FILENAME
@@ -27,7 +28,7 @@ def main():
     input_path = os.path.join(INPUT_DIR, INPUT_FILENAME)
     if not os.path.exists(input_path):
         logger.error(f"✗ Input-Datei nicht gefunden: {input_path}")
-        return
+        sys.exit(1)
 
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -37,7 +38,7 @@ def main():
     
     if not scenes:
         logger.error("✗ Keine Szenen im JSON gefunden.")
-        return
+        sys.exit(1)
 
     refined_scenes, selected_voice = refine_prompts(scenes)
     
@@ -55,6 +56,7 @@ def main():
         logger.info(f"✓ Finale Prompts gespeichert in: {out_path}")
     else:
         logger.error("✗ Verfeinerung fehlgeschlagen.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

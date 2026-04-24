@@ -93,14 +93,24 @@ def pick_topic(headlines: list[dict]) -> dict | None:
     import time
     for attempt in range(3):
         try:
+            safety_settings = [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
             model = genai.GenerativeModel(
                 model_name=GEMINI_MODEL,
+                safety_settings=safety_settings,
                 generation_config=genai.GenerationConfig(
                     response_mime_type="application/json",
                     temperature=0.3
                 )
             )
             response = model.generate_content(prompt)
+            if not response.candidates:
+                logger.warning(f"[Analyzer] ⚠ Gemini Content Filter blockiert (Auswahl): {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
+                return None
             response_text = response.text
             logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
 
@@ -168,14 +178,24 @@ def generate_content(topic: dict, article_text: str) -> dict | None:
     import time
     for attempt in range(3):
         try:
+            safety_settings = [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
             model = genai.GenerativeModel(
                 model_name=GEMINI_MODEL,
+                safety_settings=safety_settings,
                 generation_config=genai.GenerationConfig(
                     response_mime_type="application/json",
                     temperature=0.7
                 )
             )
             response = model.generate_content(prompt)
+            if not response.candidates:
+                logger.warning(f"[Analyzer] ⚠ Gemini Content Filter blockiert (Content): {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
+                return None
             response_text = response.text
             logger.debug(f"[Analyzer] LLM Antwort: {response_text}")
 

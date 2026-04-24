@@ -1,6 +1,7 @@
 """
 Service 0: Der Trend-Scout – Main Orchestrator
 Coordinates the full pipeline: Scrape → Pick Topic → Fetch Article → Generate Content → Save
+Also supports manual article input via run_from_file().
 """
 
 import json
@@ -47,6 +48,227 @@ def _save_to_history(entry: dict) -> None:
     with open(history_path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
     logger.info(f"[Historie] Neues Thema gespeichert → {len(history)} Einträge total")
+
+
+def _parse_artikel_file(filepath: str) -> tuple[str, str]:
+    """Parse an artikel.txt file into (title, article_text).
+    
+    Expected format:
+        TITEL: Dein Titel hier
+        ---
+        Dein Artikeltext hier...
+    """
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read().strip()
+    
+    # Split on the first '---' separator
+    if "---" in content:
+        header, body = content.split("---", 1)
+        # Extract title from header
+        title = header.strip()
+        if title.upper().startswith("TITEL:"):
+            title = title[6:].strip()
+        article_text = body.strip()
+    else:
+        # No separator – first line is title, rest is body
+        lines = content.split("\n", 1)
+        title = lines[0].strip()
+        if title.upper().startswith("TITEL:"):
+            title = title[6:].strip()
+        article_text = lines[1].strip() if len(lines) > 1 else title
+    
+    return title, article_text
+
+
+def run_from_file(filepath: str):
+    """Execute the Trend Scout pipeline using a manually written article file.
+    
+    Skips scraping and topic selection. Uses Gemini to generate
+    title/description/solution from the provided text.
+    
+    Args:
+        filepath: Path to the artikel.txt file.
+    
+    Returns:
+        The generated output dict, or None on failure.
+    """
+    logger.info("=" * 60)
+    logger.info("📝 SERVICE 0: EIGENER ARTIKEL-MODUS")
+    logger.info("=" * 60)
+
+    # ------------------------------------------------------------------
+    # Step 0: Check Gemini connection
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("📡 Prüfe Gemini-Verbindung...")
+    if not check_connection():
+        logger.error("❌ Pipeline abgebrochen: API Fehler")
+        sys.exit(1)
+
+    # ------------------------------------------------------------------
+    # Step 1: Read and parse the article file
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info(f"📄 Lese Artikel aus: {filepath}")
+    logger.info("-" * 40)
+
+    if not os.path.exists(filepath):
+        logger.error(f"❌ Datei nicht gefunden: {filepath}")
+        sys.exit(1)
+
+    title, article_text = _parse_artikel_file(filepath)
+    
+    if not article_text or len(article_text.strip()) < 20:
+        logger.error("❌ Artikeltext ist zu kurz oder leer. Bitte schreibe mehr Text in die Datei.")
+        sys.exit(1)
+
+    logger.info(f"✅ Titel: {title}")
+    logger.info(f"   Textlänge: {len(article_text)} Zeichen")
+
+    # ------------------------------------------------------------------
+    # Step 2: Generate content via Gemini (title/description/solution)
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("✍️  Schritt 2: Content generieren (description + solution)...")
+    logger.info("-" * 40)
+    
+    topic = {"title": title, "source": "Eigener Artikel", "url": ""}
+    content = generate_content(topic, article_text)
+
+    if not content:
+        logger.error("❌ Pipeline abgebrochen: Content-Generierung fehlgeschlagen")
+        sys.exit(1)
+
+    # ------------------------------------------------------------------
+    # Save output
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("💾 Ergebnis speichern...")
+    logger.info("-" * 40)
+
+    output = {
+        "title": content["title"],
+        "description": content["description"],
+        "solution": content["solution"],
+        "source": "Eigener Artikel",
+        "source_url": "",
+        "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+    }
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"✅ Gespeichert: {output_path}")
+
+    # Append to history
+    _save_to_history(output)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("📋 ERGEBNIS")
+    logger.info("=" * 60)
+    logger.info(f"   Title:       {output['title']}")
+    logger.info(f"   Description: {output['description'][:100]}...")
+    logger.info(f"   Solution:    {output['solution'][:100]}...")
+    logger.info(f"   Source:      {output['source']}")
+    logger.info(f"   Timestamp:   {output['timestamp']}")
+    logger.info("=" * 60)
+    logger.info("🎉 Eigener Artikel erfolgreich verarbeitet!")
+
+    return output
+
+
+def run_from_books():
+    """Execute the Trend Scout pipeline using a chapter from the books in input/books/."""
+    logger.info("=" * 60)
+    logger.info("📚 SERVICE 0: BUCH-MODUS")
+    logger.info("=" * 60)
+
+    # ------------------------------------------------------------------
+    # Step 0: Check Gemini connection
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("📡 Prüfe Gemini-Verbindung...")
+    if not check_connection():
+        logger.error("❌ Pipeline abgebrochen: API Fehler")
+        sys.exit(1)
+
+    # ------------------------------------------------------------------
+    # Step 1: Read chapter from book
+    # ------------------------------------------------------------------
+    from trend_scout.book_reader import run_book_reader
+    
+    logger.info("")
+    logger.info("📖 Wähle ungelesenes Kapitel aus Büchern...")
+    logger.info("-" * 40)
+    
+    history = _load_history()
+    book_data = run_book_reader(history)
+    
+    if not book_data:
+        sys.exit(1)
+        
+    topic = {
+        "title": book_data["chapter_title"],
+        "source": book_data["book_filename"],
+        "url": book_data["chapter_id"]
+    }
+    
+    # ------------------------------------------------------------------
+    # Step 2: Generate content via Gemini (title/description/solution)
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("✍️  Schritt 2: Content generieren (description + solution)...")
+    logger.info("-" * 40)
+    
+    content = generate_content(topic, book_data["text"])
+    
+    if not content:
+        logger.error("❌ Pipeline abgebrochen: Content-Generierung fehlgeschlagen")
+        sys.exit(1)
+        
+    # ------------------------------------------------------------------
+    # Save output
+    # ------------------------------------------------------------------
+    logger.info("")
+    logger.info("💾 Ergebnis speichern...")
+    logger.info("-" * 40)
+    
+    output = {
+        "title": content["title"],
+        "description": content["description"],
+        "solution": content["solution"],
+        "source": book_data["book_filename"],
+        "source_url": book_data["chapter_id"],
+        "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+    }
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"✅ Gespeichert: {output_path}")
+
+    # Append to history
+    _save_to_history(output)
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("📋 ERGEBNIS")
+    logger.info("=" * 60)
+    logger.info(f"   Title:       {output['title']}")
+    logger.info(f"   Description: {output['description'][:100]}...")
+    logger.info(f"   Solution:    {output['solution'][:100]}...")
+    logger.info(f"   Source:      {output['source']}")
+    logger.info(f"   Chapter ID:  {output['source_url']}")
+    logger.info(f"   Timestamp:   {output['timestamp']}")
+    logger.info("=" * 60)
+    logger.info("🎉 Buchkapitel erfolgreich verarbeitet!")
+
+    return output
 
 
 def run():
