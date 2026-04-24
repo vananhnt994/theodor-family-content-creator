@@ -33,6 +33,9 @@ def create_storyboard(data: dict) -> str:
             f.write(f"## Szene {sn}\n")
             f.write(f"**Voiceover:** {scene.get('voiceover_text')}\n\n")
             f.write(f"**Bild-Prompt (Final):** {scene.get('bild_prompt')}\n\n")
+            video_prompt = scene.get('video_prompt')
+            if video_prompt:
+                f.write(f"**Video-Prompt:** {video_prompt}\n\n")
             f.write("---\n")
     return sb_path
 

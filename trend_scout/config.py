@@ -74,7 +74,7 @@ QUAN TRỌNG: Tất cả nội dung output PHẢI bằng {channel_cfg.get('langu
 
 1. **title**: Tiêu đề hấp dẫn, viral cho video (tối đa 100 ký tự)
 2. **description**: Mô tả VẤN ĐỀ/TÌNH HUỐNG (2-4 câu)
-3. **solution**: GIẢI PHÁP/LỜI KHUYÊN cụ thể (3-5 câu thiết thực và cảm động)
+3. **solution**: GIẢI PHÁP/LỜI KHUYÊN hoặc CÁCH GIẢI QUYẾT TỪNG BƯỚC cụ thể. QUAN TRỌNG: Nếu bài viết là một câu đố, bài toán hoặc câu chuyện có cách giải quyết logic (ví dụ: chia tài sản, tính toán), bạn BẮT BUỘC phải mô tả chi tiết các bước giải quyết đó (từng bước tính toán thế nào, tại sao lại ra kết quả đó). (3-5 câu thiết thực và chi tiết)
 
 Giọng văn: ấm áp, gần gũi, như một người bạn chia sẻ kinh nghiệm.
 

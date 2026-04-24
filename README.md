@@ -1,7 +1,38 @@
 # 🎬 Theodorbot: The Local Video Content Factory
 
-Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (TikToks, YouTube Shorts). 
+Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von 60-Sekunden-Kurzvideos (TikToks, YouTube Shorts). 
 Optimiert für Edge-Geräte mit begrenztem Arbeitsspeicher (z.B. 8 GB RAM), da alle Services strikt nacheinander ausgeführt werden.
+
+## 🚀 Schnellstart
+
+```bash
+# Normale Pipeline (Trend-Scout sucht automatisch ein Thema)
+python run_pipeline.py --channel betheo
+
+# Eigener Artikel-Modus (kein Scraping, eigener Text)
+python run_pipeline.py --channel betheo --artikel
+
+# Upload-Pipeline (fertiges Video hochladen)
+python run_uploader.py --channel betheo
+```
+
+### 📝 Eigener Artikel-Modus
+
+Statt den Trend-Scout nach Themen suchen zu lassen, kannst du deinen eigenen Artikel schreiben:
+
+1. Öffne `input/artikel.txt`
+2. Schreibe deinen Text im Format:
+   ```
+   TITEL: Dein Titel hier
+   ---
+   Dein Artikeltext hier. Der gesamte Text wird durch
+   Gemini verarbeitet und als Grundlage für das Video verwendet.
+   ```
+3. Starte die Pipeline mit: `python run_pipeline.py --artikel`
+
+Der Text wird trotzdem durch Gemini aufbereitet (title/description/solution), aber es wird kein Thema aus dem Internet gesucht.
+
+---
 
 ## ⚙️ Detaillierte Service-Funktionen & Verbindungen
 
@@ -11,141 +42,180 @@ Die Pipeline ist als strikte Kette (Daisy-Chain) aufgebaut. Kein Service greift 
 Dieser Service ist der strategische Kopf der Pipeline. Er verbindet sich mit dem Internet, um Echtzeit-Daten zu sammeln, verarbeitet diese aber extrem ressourcenschonend.
 
 * **Features:**
-  * **Headless Web-Scraping:** Nutzt Playwright, um unsichtbar Foren (z.B.  `webtretho.com`, `dantri.com.vn`, `vnexpress.net`, `lamchame.com` für reines Text-Scraping ohne JavaScript-Overhead) zu lesen.
-  * **KI-Kuratierung:** Sendet die Rohdaten an eine externe API (z.B. Gemini Flash/Pro via Free Tier), um das viralste und sinnvollste und positive Themen für die Zielgruppe der Erziehung, Familienwahnsinn und Alltag in Vietnam zu identifizieren.
+  * **Headless Web-Scraping:** Nutzt Playwright, um unsichtbar Foren und Nachrichtenseiten (z.B. `webtretho.vn`, `dantri.com.vn`, `vnexpress.net`, `lamchame.com`, `bbc.com/health`, `kinderzeit.de`, `1-2-family.de`) für reines Text-Scraping zu lesen.
+  * **KI-Kuratierung:** Sendet die Rohdaten an Gemini Flash Lite, um das viralste und positivste Thema für die Zielgruppe zu identifizieren.
+  * **Eigener Artikel-Modus:** Alternativ kann ein eigener Artikel aus `input/artikel.txt` gelesen werden (`--artikel` Flag).
+  * **Duplikaterkennung:** URL-basierte Historie verhindert doppelte Themen.
 * **Verbindungen:**
-  * **Input:** Ziel-URLs (z.B. `webtretho.com`, `dantri.com.vn`, `vnexpress.net`, `lamchame.com`).
-  * **Output:** Generiert die Datei `thema.json` (enthält `titel` und `beschreibung`).
+  * **Input:** Ziel-URLs aus `channels/<channel>.json` oder `input/artikel.txt`
+  * **Output:** Generiert die Datei `output/thema.json` (enthält `title`, `description`, `solution`)
 
 ### ✍️ Service 1: The Creator (Die Redaktion)
-Der kreative Motor des Systems. Entwickelt Inhalte, die emotional fesseln und eine hohe Watch-Time garantieren, basierend auf erfolgreichen Hook-Strategien.
+Der kreative Motor des Systems. Entwickelt emotionale 60-Sekunden-Drehbücher mit warmem Storytelling.
 
 * **Features:**
-  * **Strukturierte Skript-Erstellung:** Schreibt warme Voiceover-Drehbücher mit klaren Strukturen (z.B. Alltags-Metaphern, "3-Tipps"-Listen) für hohe Relevanz bei Eltern und Teenies.
-  * **Szenen-Splitting:** Teilt den Text logisch in knackige 3- bis 5-Sekunden-Abschnitte auf. Keine langatmigen Pausen.
-  * **Prompt-Drafting:** Übersetzt die Handlung jeder Szene in erste englische Bild-Prompts mit starkem Fokus auf das zentrale Motiv.
+  * **Kontextabhängiges Storytelling:** Schreibt warme Voiceover-Drehbücher mit klarer Struktur: Emotionaler Hook → Persönliche Situation → Wendepunkt → Warme Botschaft.
+  * **Szenen-Splitting:** Teilt den Text logisch in 4-6 Szenen zu je 5-8 Sekunden auf.
+  * **Prompt-Drafting:** Übersetzt die Handlung jeder Szene in erste englische Bild-Prompts mit Fokus auf Character Consistency.
 * **Verbindungen:**
-  * **Input:** Liest `thema.json` aus Service 0.
-  * **Output:** Generiert die Datei `roh_skript.json`.
+  * **Input:** Liest `output/thema.json` aus Service 0
+  * **Output:** Generiert die Datei `output/roh_skript.json`
 
 ### 🧐 Service 2: The Art Director (Die Qualitätskontrolle)
-Der Wächter über den visuellen Stil. Verhindert langweilige Stockfotos und erzwingt einen aufmerksamkeitsstarken, viralen Look (Fokus auf starke Emotionen und Close-ups).
+Der Wächter über den visuellen Stil. Erzwingt einen konsistenten, ruhigen Studio-Ghibli-Anime-Look.
 
 * **Features:**
-  * **Mimik & Fokus-Enforcement:** Optimiert die Prompts gezielt auf ausdrucksstarke, teils übertriebene Mimik ("hyper-expressive faces") und enge Porträts ("close-up shot"), da diese in Kurzvideos am besten konvertieren.
-  * **Prompt-Sanitization:** Löscht rigoros Standard-KI-Vokabular ("epic", "masterpiece") und überladene Hintergrundbeschreibungen, um das Hauptmotiv sauber zu halten.
-  * **Style-Konsistenz:** Fügt feste Parameter für satte Farben und ansprechende Beleuchtung hinzu (z.B. "vibrant colors", "soft studio lighting", "magical realism").
+  * **Ghibli 2D Stil:** Alle Prompts werden in flat 2D Japanese anime illustration (Studio Ghibli) umgeschrieben.
+  * **Simple Hintergründe:** Hintergründe sind bewusst minimal – sanfte Pastellfarben, Farbverläufe, weiche Natur-Silhouetten. Keine überladenen Szenen.
+  * **Entspannte Stimmung:** Jede Szene muss Ruhe, Frieden und Gelassenheit ausstrahlen. Warme Sonnenuntergangs-Töne, weiches goldenes Licht.
+  * **Character Consistency:** Volle Beschreibung (Rolle, Alter, Kleidung, Aussehen) wird in JEDEM Prompt wiederholt.
+  * **Video-Prompts:** Zusätzlich zu den Bild-Prompts wird ein `video_prompt` pro Szene generiert – sanfte Kamerabewegungen und minimale Animationen.
+  * **Stimmenwahl:** Analysiert das Skript und wählt die passende Sprecherstimme.
 * **Verbindungen:**
-  * **Input:** Liest `roh_skript.json` aus Service 1.
-  * **Output:** Generiert die Datei `finale_prompts.json` (perfekt optimiert für visuelle Viralität).
+  * **Input:** Liest `output/roh_skript.json` aus Service 1
+  * **Output:** Generiert die Datei `output/finale_prompts.json` (mit `bild_prompt` und `video_prompt` pro Szene)
 
 ### 🖼️ Service 3A: Der Bild-Beschaffer (Cloud API Integration)
 Der Übergang vom lokalen Denken zur Cloud-Power für hochauflösende Grafiken.
 
 * **Features:**
-  * **API-Kommunikation:** Direkte Server-zu-Server-Kommunikation (REST API).
-  * **Google Ökosystem:** Nutzt Bild-KI-APIs (z.B. Imagen 4 Fast Vetex AI), um die englischen Prompts blitzschnell und stabil auf externen Großrechnern in fotorealistische Bilder in Größe 9:16 für tiktok/shorts umzuwandeln.
+  * **Google Vertex AI:** Nutzt Imagen 4 Fast (`imagen-4.0-fast-generate-001`) für schnelle, hochwertige Bildgenerierung im Format 9:16 (TikTok/Shorts).
+  * **Automatisches Überspringen:** Bereits existierende Bilder werden nicht neu generiert.
 * **Verbindungen:**
-  * **Input:** Liest `finale_prompts.json` (spezifisch den Teil `bild_prompt`).
-  * **Output:** Speichert durchnummerierte Bilddateien im Output-Ordner.
+  * **Input:** Liest `output/finale_prompts.json` (spezifisch `bild_prompt` pro Szene)
+  * **Output:** Speichert durchnummerierte Bilddateien (`Szene_01.jpg`, etc.) im Output-Ordner
 
-### 🎙️ Service 3B: Der Ton-Meister (Lokales Text-to-Speech)
-Erzeugt die Sprecherstimme offline.
+### 🎙️ Service 3B: Der Ton-Meister (Text-to-Speech)
+Erzeugt natürlich klingende Sprecherstimmen.
 
 * **Features:**
-  * **ElevenLabs Integration:** Nutzt das winzige ElevenLabs-Modell Eleven v3, um natürliche vietnamesische (und deutsche) Stimmen direkt auf dem Orin Nano zu rendern, ohne Cloud-Latenz.
-  * **Stimmen:**
-    * **Männlich:** Brian - Deep, Resonant and Comforting
-    * **Weiblich:** Laura - Calm and Smooth
+  * **ElevenLabs Integration:** Nutzt das ElevenLabs Eleven v3 Modell für natürliche vietnamesische Stimmen.
+  * **Stimmen (konfigurierbar in `channels/<channel>.json`):**
+    * **Mann:** Deep, Resonant and Comforting
+    * **Frau:** Calm and Smooth
+    * **Kind:** Gentle and Playful
+  * **Automatische Stimmenwahl:** Die in Service 2 gewählte Stimme wird automatisch verwendet.
 * **Verbindungen:**
-  * **Input:** Liest `finale_prompts.json` (spezifisch den Teil `voiceover_text`).
-  * **Output:** Speichert nummerierte Audiodateien im Output-Ordner.
+  * **Input:** Liest `output/finale_prompts.json` (spezifisch `voiceover_text` pro Szene)
+  * **Output:** Speichert nummerierte Audiodateien im Output-Ordner
 
-  ### ☁️ Service 4: Der Archiver (Cloud-Upload & Cleanup)
-Der finale Schritt, der die Brücke zwischen dem lokalen Edge-Gerät (Jetson) und dem Cloud-Arbeitsplatz schlägt. Er räumt den lokalen Workspace auf und bereitet alles für den endgültigen Videoschnitt vor.
+### ☁️ Service 4: Der Archiver (Cloud-Upload & Cleanup)
+Der Schritt, der die Brücke zwischen dem lokalen Edge-Gerät und dem Cloud-Arbeitsplatz schlägt.
 
 * **Features:**
-  * **Markdown-Export (Storyboard):** Erstellt automatisch eine übersichtliche `Storyboard.md` für das spezifische Video. Diese enthält den Titel, die Beschreibung, den vollständigen Sprechertext und alle verwendeten Bild-Prompts für den schnellen Überblick.
-  * **Intelligentes Zipping:** Packt alle lokal generierten Assets (hochaufgelöste `.jpg` Bilder, `.wav` Voiceover-Audios, `.json` Skripte) in eine kompakte `.zip` Datei, um Upload-Zeit und Bandbreite zu sparen.
-  * **Drive-Automatisierung:** Nutzt die Google Drive API (via Service Account), um völlig autonom einen neuen Projektordner mit aktuellem Zeitstempel im Cloud-Speicher zu erstellen und das ZIP-Paket sowie das Storyboard sicher hochzuladen.
+  * **Markdown-Export (Storyboard):** Erstellt automatisch eine übersichtliche `Storyboard.md` mit Titel, Beschreibung, Sprechertext, Bild-Prompts und Video-Prompts.
+  * **Intelligentes Zipping:** Packt alle generierten Assets (`.jpg` Bilder, `.wav` Audios, `.json` Skripte) in eine kompakte `.zip` Datei.
+  * **Drive-Automatisierung:** Nutzt die Google Drive API (via OAuth 2.0), um einen neuen Projektordner zu erstellen und alle Assets hochzuladen.
 * **Verbindungen:**
-  * **Input:** Alle finalen, generierten Dateien aus dem lokalen `output/` Ordner.
-  * **Output:** Ein strukturierter Ordner in Google Drive (z.B. `Theodorbot_Archiv/Projekt_2026-04-10_Thema/`), gefüllt mit allen Assets und bereit für den direkten Import in Adobe Premiere.
+  * **Input:** Alle finalen Dateien aus dem lokalen `output/` Ordner
+  * **Output:** Ein strukturierter Ordner in Google Drive, bereit für den Import in Adobe Premiere oder Google Labs Flow
+
+### 🚀 Service 5: The Uploader (Multi-Plattform-Upload)
+Der finale Verteilungsschritt – veröffentlicht fertige Videos auf allen Plattformen.
+
+* **Features:**
+  * **Drive-Scan:** Scannt den `ready_to_post` Google Drive-Ordner nach neuen `.mp4` Videos.
+  * **SEO-Daten:** Lädt automatisch die passende `*_SEO.json` Datei mit Titel, Beschreibung und Hashtags.
+  * **Multiplex-Upload:** Unterstützt parallelen Upload auf YouTube, Meta/Instagram und TikTok (API-Integration vorbereitet).
+  * **Automatische Archivierung:** Nach erfolgreichem Upload wird das Video in den `uploaded_archiv` Ordner verschoben.
+* **Verbindungen:**
+  * **Input:** Fertige `.mp4` Videos und `*_SEO.json` Dateien aus Google Drive
+  * **Output:** Veröffentlichtes Video auf YouTube/TikTok/Instagram + Archivierung
+* **Ausführung:** `python run_uploader.py --channel betheo`
+
+---
 
 ## 🛠️ Verwendeter Tech-Stack
 
 * **Python 3.10+**: Die Kern-Logik für alle Microservices.
 * **Playwright**: Für performantes Headless-Web-Scraping (Service 0).
-* **Ollama (Qwen 3.5:4b)**: Lokale LLM-Engine für Text, Logik und Prompt-Generierung. Versteht vietnamesischen und deutschen Kontext perfekt und läuft flüssig auf 8 GB RAM.
-* **Piper TTS**: Rasante, offline Text-to-Speech Engine für Voiceovers.
-* **Google API**: Stabile Cloud-Anbindung für die Bildgenerierung in Service 3A.
+* **Google Gemini Flash Lite**: Cloud-LLM für Themenfindung, Skripterstellung und Prompt-Verfeinerung (Services 0, 1, 2).
+* **Google Vertex AI (Imagen 4 Fast)**: Hochwertige Bildgenerierung im Ghibli 2D-Stil (Service 3A).
+* **ElevenLabs (Eleven v3)**: Natürliche Text-to-Speech Engine für vietnamesische Voiceovers (Service 3B).
+* **Google Drive API**: Cloud-Upload und Archivierung (Services 4, 5).
+* **Google OAuth 2.0**: Sichere Authentifizierung für Drive-Zugriff.
+
+---
 
 ## 🏗️ System-Architektur
 
-Die Pipeline nutzt eine Kombination aus Online-APIs für Trend-Scouting und lokalen, offline laufenden KI-Modellen für die Texterstellung und Sprachgenerierung, um maximale Privatsphäre und Kostenkontrolle zu gewährleisten. Am Ende steht der manuelle Feinschliff in Adobe Premiere.
+Die Pipeline nutzt Google Gemini als Cloud-LLM für intelligente Textverarbeitung und Google Vertex AI für die Bildgenerierung. ElevenLabs liefert natürliche Stimmen. Am Ende steht der manuelle Feinschliff in Adobe Premiere oder Google Labs Flow.
 
 ```text
 =============================================================================
                               START (Automatischer Auslöser)
                         Uhrzeit: z.B. Jeden Morgen um 09:00 Uhr
-    =============================================================================
+                    ODER: python run_pipeline.py --artikel
+=============================================================================
                                       │
                                       ▼
     ┌───────────────────────────────────────────────────────────────────────────┐
     │ SERVICE 0: DER TREND-SCOUT (Themenfindung)                                │
-    │ Technologie: Python + Playwright + Ollama (Qwen 3.5:4b lokal)             │
+    │ Technologie: Python + Playwright + Gemini Flash Lite                      │
     │                                                                           │
-    │ Funktion: 1. Liest Schlagzeilen (Webtretho, VnExpress, Dân Trí, etc.).    │
-    │           2. Lokale KI wählt das beste, viralste Thema aus.               │
-    │           3. Scrapt den kompletten Artikel und generiert Video-Ideen.     │
-    │ Output: Eine Textdatei -> 'thema.json' (Titel, Beschreibung, Lösung)      │
+    │ Funktion: 1. Liest Schlagzeilen (Webtretho, VnExpress, BBC, etc.).        │
+    │           2. Gemini wählt das beste, viralste Thema aus.                  │
+    │           3. Scrapt den Artikel und generiert Video-Ideen.                │
+    │ ALTERNATIV: Liest eigenen Text aus input/artikel.txt (--artikel)           │
+    │ Output: 'thema.json' (Titel, Beschreibung, Lösung)                       │
     └───────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼ (Gibt Thema an Service 1)
     ┌───────────────────────────────────────────────────────────────────────────┐
-    │ SERVICE 1: THE CREATOR (Lokale Redaktion & Skript)                        │
-    │ Technologie: Python + Ollama (Qwen 3.5:4b lokal)                          │
+    │ SERVICE 1: THE CREATOR (Redaktion & 60s-Drehbuch)                         │
+    │ Technologie: Python + Gemini Flash Lite                                   │
     │                                                                           │
-    │ Funktion: Liest 'thema.json'. Schreibt ein warmes Voiceover-Drehbuch.     │
-    │           Zerteilt es per Prompt-Chaining in 3- bis 5-Sekunden-Szenen.    │
-    │           Übersetzt die Handlung in erste englische Bild-Prompts.         │
-    │ Output: Eine strukturierte Datei -> 'roh_skript.json'                     │
+    │ Funktion: Liest 'thema.json'. Schreibt ein warmes 60-Sekunden-Drehbuch.   │
+    │           Zerteilt es in 4-6 Szenen à 5-8 Sekunden.                      │
+    │           Erstellt erste englische Bild-Prompts mit Character Consistency. │
+    │ Output: 'roh_skript.json'                                                │
     └───────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼ (Gibt roh_skript.json an Service 2)
     ┌───────────────────────────────────────────────────────────────────────────┐
-    │ SERVICE 2: THE ART DIRECTOR (Bild-Kritiker)                               │
-    │ Technologie: Python + Ollama (llama3:8b-instruct-q8_0 lokal)              │
+    │ SERVICE 2: THE ART DIRECTOR (Ghibli 2D Stil-Kontrolle)                    │
+    │ Technologie: Python + Gemini Flash Lite                                   │
     │                                                                           │
-    │ Funktion: Nimmt Bild-Entwürfe aus Service 1. Entfernt "KI-Wörter".        │
-    │           Erzwingt Fotorealismus (35mm, film grain, documentary).         │
-    │ Output: Eine neue Datei -> 'finale_prompts.json'                          │
+    │ Funktion: Verfeinert Bild-Prompts → flat 2D Ghibli Stil, simple BGs.     │
+    │           Erstellt zusätzlich Video-Prompts (sanfte Animationen).         │
+    │           Wählt passende Sprecherstimme.                                 │
+    │ Output: 'finale_prompts.json' (bild_prompt + video_prompt pro Szene)      │
     └───────────────────────────────────────────────────────────────────────────┘
                                       │
               ┌───────────────────────┴───────────────────────┐
               ▼ (Liest finale_prompts.json)                   ▼ (Liest Skript-Texte)
     ┌───────────────────────────────────┐   ┌───────────────────────────────────┐
     │ SERVICE 3A: DER BILD-BESCHAFFER   │   │ SERVICE 3B: DER TON-MEISTER       │
-    │ Technologie: Python + Google API  │   │ Technologie: Python + Piper TTS   │
-    │ (z.B. Imagen via Vertex AI)       │   │                                   │
+    │ Technologie: Python + Vertex AI   │   │ Technologie: Python + ElevenLabs  │
+    │ (Imagen 4 Fast)                   │   │ (Eleven v3)                       │
     │                                   │   │                                   │
-    │ Funktion: Sendet saubere Prompts  │   │ Funktion: Wandelt Texte in        │
-    │ per API-Call an Google-Server.    │   │ menschliche Audio-Sprache um.     │
-    │ Lädt fertige Bilder herunter.     │   │ Lokal und ohne Cloud-Zwang.       │
-    │ Output: Szene_01.jpg, etc.        │   │ Output: Szene_01.wav, etc.        │
-    └───────────────────────────────────┘   └───────────────────────────────────┘
-              │                                               │
+    │ Funktion: Sendet Ghibli-Prompts   │   │ Funktion: Wandelt Texte in        │
+    │ an Vertex AI. Lädt 9:16 Bilder.   │   │ natürliche vietnamesische         │
+    │ Output: Szene_01.jpg, etc.        │   │ Sprecherstimme um.               │
+    └───────────────────────────────────┘   │ Output: Szene_01.wav, etc.        │
+              │                             └───────────────────────────────────┘
               └───────────────────────┬───────────────────────┘
                                       ▼
                                   (Video & Assets bereit)
 ┌───────────────────────────────────────────────────────────────────────────┐
 │ SERVICE 4: DER ARCHIVER (Cloud-Upload & Cleanup)                          │
-│ Technologie: Python + Google Drive API                                    │
+│ Technologie: Python + Google Drive API (OAuth 2.0)                        │
 │                                                                           │
-│ Funktion: 1. Erstellt Zusammenfassung als Storyboard.md.                  │
-│           2. Zippt alle Bilder, Audios und Skripte.                       │
-│           3. Lädt ZIP, Storyboard und das .mp4-Video hoch.                │
-│ Output: Upload-Bestätigung & Google Drive Link                            │
+│ Funktion: 1. Erstellt Storyboard.md (inkl. Video-Prompts).               │
+│           2. Zippt alle Bilder, Audios und Skripte.                      │
+│           3. Lädt alles nach Google Drive hoch.                          │
+│ Output: Upload-Bestätigung & Google Drive Link                           │
+└───────────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│ SERVICE 5: THE UPLOADER (Multi-Plattform-Verteilung)                      │
+│ Technologie: Python + YouTube/Meta/TikTok APIs                            │
+│                                                                           │
+│ Funktion: 1. Scannt 'ready_to_post' Drive-Ordner nach .mp4 Videos.       │
+│           2. Lädt SEO-Daten und veröffentlicht auf allen Plattformen.    │
+│           3. Verschiebt fertige Videos ins Archiv.                       │
+│ Output: Veröffentlichte Videos auf YouTube, TikTok, Instagram             │
 └───────────────────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
@@ -158,6 +228,31 @@ Die Pipeline nutzt eine Kombination aus Online-APIs für Trend-Scouting und loka
                     GOOGLE LABS FLOW (Web-Workspace)
           1. Öffne den hochgeladenen Drive-Ordner von Service 4.
           2. Importiere das Voiceover in die Flow-Timeline.
-          3. Nutze die vorbereiteten Prompts aus der .md Datei, um in
-            Flow direkt Bilder (Nano Banana) und Videos (Veo 3.1) zu 
-            generieren und zusammenzusetzen.
+          3. Nutze die vorbereiteten Bild-Prompts und Video-Prompts
+             aus der Storyboard.md, um in Flow direkt Bilder und 
+             Videos zu generieren und zusammenzusetzen.
+```
+
+---
+
+## 📁 Projektstruktur
+
+```
+theodor-edge-content-creator/
+├── channels/               # Channel-Konfigurationen
+│   └── betheo.json          # BeTheo Channel Config (Quellen, Stimmen, Drive-IDs)
+├── input/                  # Manueller Input
+│   └── artikel.txt          # Eigener Artikel für --artikel Modus
+├── trend_scout/            # Service 0: Trend-Scout
+├── creator/                # Service 1: The Creator
+├── art_director/           # Service 2: The Art Director
+├── image_generator/        # Service 3A: Bild-Beschaffer
+├── audio_generator/        # Service 3B: Ton-Meister
+├── archiver/               # Service 4: Archiver
+├── uploader/               # Service 5: Uploader
+├── output/                 # Generierte Dateien (temporär)
+├── run_pipeline.py         # Haupt-Pipeline (Service 0-4)
+├── run_uploader.py         # Upload-Pipeline (Service 5)
+├── channel_config.py       # Channel-Config Loader
+└── .env                    # API Keys (nicht im Git!)
+```

@@ -78,15 +78,26 @@ def _call_llm(prompt: str, temperature: float = 0.7) -> str:
         
     genai.configure(api_key=api_key)
     
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+    
     model = genai.GenerativeModel(
         model_name=GEMINI_MODEL,
         system_instruction=SYSTEM_PROMPT,
+        safety_settings=safety_settings,
         generation_config=genai.GenerationConfig(
             response_mime_type="application/json",
             temperature=temperature
         )
     )
     response = model.generate_content(prompt)
+    if not response.candidates:
+        logger.warning(f"[Creator] ⚠ Gemini Content Filter blockiert: {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
+        raise ValueError("PROHIBITED_CONTENT block")
     return response.text.strip()
 
 
