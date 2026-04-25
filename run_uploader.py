@@ -38,7 +38,7 @@ def main():
     logger.info(f"   ⏱ Theodorbot - Uploader Schedule Start [{args.channel}]")
     logger.info("==================================================")
     
-    run_service("Service 5: The Uploader", "uploader.main")
+    run_service("Service 5: The Uploader", "uploader")
         
     logger.info("🎉 Upload-Durchlauf beendet!")
 

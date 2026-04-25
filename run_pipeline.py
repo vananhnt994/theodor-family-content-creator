@@ -116,11 +116,11 @@ def main():
         
         # Rest der Pipeline normal ausführen (ab Service 1)
         services = [
-            ("Service 1: The Creator", "creator.main"),
-            ("Service 2: The Art Director", "art_director.main"),
-            ("Service 3A: Bild-Beschaffer", "image_generator.main"),
-            ("Service 3B: Ton-Meister", "audio_generator.main"),
-            ("Service 4: Archiver", "archiver.main")
+            ("Service 1: The Creator", "creator"),
+            ("Service 2: The Art Director", "art_director"),
+            ("Service 3A: Bild-Beschaffer", "image_generator"),
+            ("Service 3B: Ton-Meister", "audio_generator"),
+            ("Service 4: Archiver", "archiver")
         ]
     elif args.book:
         # Buch-Modus: Nutze Buch-Kapitel statt Trend-Scout
@@ -128,21 +128,21 @@ def main():
         
         # Rest der Pipeline normal ausführen (ab Service 1)
         services = [
-            ("Service 1: The Creator", "creator.main"),
-            ("Service 2: The Art Director", "art_director.main"),
-            ("Service 3A: Bild-Beschaffer", "image_generator.main"),
-            ("Service 3B: Ton-Meister", "audio_generator.main"),
-            ("Service 4: Archiver", "archiver.main")
+            ("Service 1: The Creator", "creator"),
+            ("Service 2: The Art Director", "art_director"),
+            ("Service 3A: Bild-Beschaffer", "image_generator"),
+            ("Service 3B: Ton-Meister", "audio_generator"),
+            ("Service 4: Archiver", "archiver")
         ]
     else:
         # Normaler Modus: Alle Services
         services = [
-            ("Service 0: Trend-Scout", "trend_scout.main"),
-            ("Service 1: The Creator", "creator.main"),
-            ("Service 2: The Art Director", "art_director.main"),
-            ("Service 3A: Bild-Beschaffer", "image_generator.main"),
-            ("Service 3B: Ton-Meister", "audio_generator.main"),
-            ("Service 4: Archiver", "archiver.main")
+            ("Service 0: Trend-Scout", "trend_scout"),
+            ("Service 1: The Creator", "creator"),
+            ("Service 2: The Art Director", "art_director"),
+            ("Service 3A: Bild-Beschaffer", "image_generator"),
+            ("Service 3B: Ton-Meister", "audio_generator"),
+            ("Service 4: Archiver", "archiver")
         ]
     
     for name, module in services:

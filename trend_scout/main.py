@@ -271,7 +271,7 @@ def run_from_books():
     return output
 
 
-def run():
+def main():
     """Execute the full Trend Scout pipeline."""
     logger.info("=" * 60)
     logger.info("🔍 SERVICE 0: DER TREND-SCOUT")
@@ -388,4 +388,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    main()
