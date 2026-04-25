@@ -42,7 +42,7 @@ def _check_gemini() -> bool:
     return True
 
 
-def run():
+def main():
     """Execute the full Creator pipeline."""
     logger.info("=" * 60)
     logger.info("✍️  SERVICE 1: THE CREATOR (Die Redaktion)")
@@ -159,4 +159,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    main()

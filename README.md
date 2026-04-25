@@ -238,7 +238,7 @@ Die Pipeline nutzt Google Gemini als Cloud-LLM für intelligente Textverarbeitun
 ## 📁 Projektstruktur
 
 ```
-theodor-edge-content-creator/
+theodor-family-content-creator/
 ├── channels/               # Channel-Konfigurationen
 │   └── betheo.json          # BeTheo Channel Config (Quellen, Stimmen, Drive-IDs)
 ├── input/                  # Manueller Input
