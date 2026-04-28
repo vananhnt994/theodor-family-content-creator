@@ -91,4 +91,7 @@ Trả lời CHỈ bằng JSON với format sau, KHÔNG thêm text nào khác:
 # ---------------------------------------------------------------------------
 OUTPUT_DIR = "output"
 OUTPUT_FILENAME = "thema.json"
-HISTORY_FILENAME = "historie.json"
+HISTORY_SHORTS_FILENAME = "historie_shorts.json"
+HISTORY_LONG_FILENAME = "historie_long.json"
+# Legacy alias (used by existing shorts pipeline)
+HISTORY_FILENAME = HISTORY_SHORTS_FILENAME

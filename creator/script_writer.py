@@ -244,3 +244,56 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
             return None
 
     return None
+
+
+def clean_book_text(raw_text: str) -> dict | None:
+    """
+    Long-Form mode: Clean raw PDF text for use as a read-aloud voiceover.
+    Removes PDF artifacts (page numbers, headers, broken line breaks) without
+    using an LLM – pure rule-based cleaning.
+
+    Args:
+        raw_text: Raw text extracted from a PDF chapter.
+
+    Returns:
+        Dict with 'cleaned_text', 'word_count', 'estimated_duration_minutes',
+        or None if the text is too short.
+    """
+    import re
+
+    if not raw_text or len(raw_text.strip()) < 50:
+        logger.error("[Creator/Long] ✗ Rohtext ist zu kurz oder leer.")
+        return None
+
+    text = raw_text
+
+    # 1. Remove isolated page numbers (a line containing only a number)
+    text = re.sub(r"(?m)^\s*\d{1,4}\s*$", "", text)
+
+    # 2. Fix hyphenation at line breaks (word-\ncontinuation → wordcontinuation)
+    text = re.sub(r"-\n([a-záàảãạăắặằẳẵâấậầẩẫêếệềểễôốộồổỗơớợờởỡưứựừửữđ])",
+                  r"\1", text, flags=re.IGNORECASE)
+
+    # 3. Join lines that were broken mid-sentence (no sentence-ending punctuation)
+    text = re.sub(r"([^.!?»«\n])\n([a-záàảãạăắặằẳẵâấậầẩẫêếệềểễôốộồổỗơớợờởỡưứựừửữđ])",
+                  r"\1 \2", text, flags=re.IGNORECASE)
+
+    # 4. Collapse multiple blank lines into a single paragraph break
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    # 5. Strip trailing whitespace per line
+    text = "\n".join(line.rstrip() for line in text.splitlines())
+    text = text.strip()
+
+    # Stats — average warm narration ~130 words/min
+    word_count = len(text.split())
+    estimated_minutes = round(word_count / 130, 1)
+
+    logger.info(f"[Creator/Long] ✓ Text bereinigt: {word_count} Wörter (~{estimated_minutes} Min.)")
+    logger.info(f"[Creator/Long]   Vorschau: {text[:120]}...")
+
+    return {
+        "cleaned_text": text,
+        "word_count": word_count,
+        "estimated_duration_minutes": estimated_minutes,
+    }

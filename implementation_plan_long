@@ -1,0 +1,252 @@
+# Long-Form Pipeline: "Gute Nacht Geschichten" Modus
+
+Erweiterung der Theodorbot-Pipeline um einen Long-Form-Modus für **bis zu 12-minütige** Vorlesevideos aus echten Buch-PDFs. Die bestehende Shorts-Pipeline bleibt vollständig erhalten. Gesteuert über ein **separates Skript `run_long_pipeline.py`**.
+
+## Proposed Changes
+
+### Verzeichnisstruktur
+
+```
+input/
+├── shorts/
+│   ├── artikel.txt          (verschoben von input/artikel.txt)
+│   └── books/               (verschoben von input/books/)
+│       ├── Bố Mẹ Đã Cưa Đổ Tớ.pdf
+│       └── ...10 PDFs
+└── long/
+    └── books/                (NEU — für Long-Form Gute-Nacht-Geschichten)
+        └── (hier PDFs ablegen)
+```
+
+> [!IMPORTANT]
+> **FFmpeg muss installiert werden.** FFmpeg ist aktuell nicht auf dem System. Installation via `choco install ffmpeg` oder manuell von [ffmpeg.org](https://ffmpeg.org/download.html). Bitte vor dem ersten Lauf installieren.
+
+> [!WARNING]
+> **`historie.json` Migration:** Die bestehende `output/historie.json` wird in `output/historie_shorts.json` umbenannt. Neue Long-Form-Einträge landen in `output/historie_long.json`. Bestehende Buch-Einträge (erkennbar an `.pdf` in `source`) bleiben in der Shorts-Historie, da sie aus dem Shorts-Book-Modus stammen.
+
+---
+
+### 1. History-System (Trennung Shorts / Long)
+
+#### [MODIFY] [config.py](file:///c:/Projects/theodor-family-content-creator/trend_scout/config.py)
+- `HISTORY_FILENAME` → `HISTORY_SHORTS_FILENAME = "historie_shorts.json"`
+- Neues `HISTORY_LONG_FILENAME = "historie_long.json"`
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/trend_scout/main.py)
+- `_load_history()` und `_save_to_history()` erhalten einen `mode`-Parameter (`"shorts"` oder `"long"`)
+- Bestehende `run_from_file()`, `run_from_books()`, `main()` nutzen `mode="shorts"`
+- Neue Funktion `run_from_long_books()` nutzt `mode="long"`
+
+---
+
+### 2. Service 0: Die "Librarian"-Logik (Long-Form)
+
+#### [MODIFY] [book_reader.py](file:///c:/Projects/theodor-family-content-creator/trend_scout/book_reader.py)
+- `BOOKS_DIR` wird zum Parameter statt Konstante
+- `BOOKS_DIR_SHORTS = "input/shorts/books"` (bestehende PDFs)
+- `BOOKS_DIR_LONG = "input/long/books"` (neu)
+- Für Long-Form: **Sequenzielles Lesen** (erstes ungelesenes Kapitel, nicht random)
+- Long-Form gibt den **kompletten Kapiteltext** zurück (kein Kürzen)
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/trend_scout/main.py)
+- Neue Funktion `run_from_long_books()`:
+  - Scannt `input/long/books/` nach PDFs
+  - Prüft gegen `historie_long.json`
+  - Wählt sequenziell das nächste ungelesene Kapitel
+  - Speichert in `thema.json` mit `"mode": "long"` und neuem Feld `"full_text"`
+  - Kein Gemini-Aufruf nötig (Rohtext direkt aus PDF)
+
+#### Output `thema.json` für Long-Form:
+```json
+{
+  "title": "Tìm hiểu về tình yêu",
+  "description": "",
+  "solution": "",
+  "source": "Bố Mẹ Đã Cưa Đổ Tớ.pdf",
+  "source_url": "Bố Mẹ Đã Cưa Đổ Tớ.pdf::Tìm hiểu về tình yêu",
+  "full_text": "<kompletter Kapiteltext>",
+  "mode": "long",
+  "timestamp": "..."
+}
+```
+
+---
+
+### 3. Service 1: Der "Text-Cleaner" (Long-Form)
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/creator/main.py)
+- Erkennung von `"mode": "long"` in `thema.json`
+- Long-Form: Ruft `clean_book_text()` statt `generate_voiceover()` + `split_into_scenes()` auf
+
+#### [MODIFY] [script_writer.py](file:///c:/Projects/theodor-family-content-creator/creator/script_writer.py)
+- Neue Funktion `clean_book_text(raw_text: str) -> dict`:
+  - Entfernt Seitenzahlen (z.B. `\n42\n`), Kopfzeilen, doppelte Leerzeilen
+  - Korrigiert Zeilenumbrüche mitten im Satz (PDF-typisches Problem)
+  - Entfernt Header/Footer-Artefakte
+  - Gibt `{"cleaned_text": "...", "word_count": N, "estimated_duration_minutes": M}` zurück
+  - **Kein Gemini-Aufruf** – nur regelbasierte Textbereinigung
+
+#### Output `roh_skript.json` für Long-Form:
+```json
+{
+  "video_title": "Tìm hiểu về tình yêu",
+  "mode": "long",
+  "cleaned_text": "<gereinigter Vorlese-Text>",
+  "word_count": 1500,
+  "estimated_duration_minutes": 8,
+  "seo": { "title": "...", "description": "..." },
+  "source_thema": { ... },
+  "generated_at": "..."
+}
+```
+
+---
+
+### 4. Service 2: Der Geschichtenkritiker (Long-Form)
+
+> [!NOTE]
+> Im Long-Form-Modus wird Service 2 zum **Kindergeschichten-Kritiker und -Bewerter**. Er liest den gereinigten Text und überarbeitet ihn, damit Kinder und Eltern ihn gerne hören. Zusätzlich erstellt er **einen einzigen Bild-Prompt** für das Cover und wählt die **Stimme abwechselnd** (nicht immer Frau).
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/art_director/main.py)
+- Erkennung von `"mode": "long"` in `roh_skript.json`
+- Long-Form Ablauf:
+  1. **Story-Kritik via Gemini**: Der gereinigte Buchtext wird an Gemini geschickt mit einem speziellen Prompt:
+     - Überprüfe ob der Text kindgerecht und fesselnd ist
+     - Passe Formulierungen an, die zu trocken oder akademisch klingen
+     - Füge sanfte Übergänge hinzu, damit der Vorlese-Rhythmus stimmt
+     - Ersetze zu komplexe Wörter durch verständliche Alternativen
+     - **Inhalt und Geschichte dürfen NICHT verändert werden** – nur die Sprache wird optimiert
+  2. **1 Cover-Bild-Prompt** generieren basierend auf Titel + Zusammenfassung
+  3. **Stimmenauswahl abwechselnd**: Prüft die `historie_long.json` und wählt die Stimme, die zuletzt am wenigsten verwendet wurde (Mann, Frau, Kind rotierend)
+
+#### [MODIFY] [config.py](file:///c:/Projects/theodor-family-content-creator/art_director/config.py)
+- Neuer `LONG_FORM_STORY_CRITIC_PROMPT` für die Textoptimierung
+
+#### Output `finale_prompts.json` für Long-Form:
+```json
+{
+  "video_title": "...",
+  "mode": "long",
+  "optimized_text": "<vom Kritiker überarbeiteter Text>",
+  "selected_voice": "Mann",
+  "cover_image": {
+    "bild_prompt": "<einzelner Bild-Prompt im Ghibli-Stil>"
+  },
+  "seo": { "title": "...", "description": "..." },
+  "art_director_checked_at": "..."
+}
+```
+
+---
+
+### 5. Service 3A: Bild-Beschaffer (Long-Form)
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/image_generator/main.py)
+- Erkennung von `"mode": "long"`
+- Long-Form: Nur **1 Bild** generieren aus `cover_image.bild_prompt`
+- Ausgabe: `output/Cover.jpg`
+
+---
+
+### 6. Service 3B: Ton-Meister (Audio Chunking)
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/audio_generator/main.py)
+- Erkennung von `"mode": "long"`
+- Neue Funktion `generate_long_audio(text, voice_id, client)`:
+  1. Text in Chunks aufteilen (~2500 Zeichen, an Satzgrenzen)
+  2. Jeden Chunk einzeln an ElevenLabs senden
+  3. **Ruhige Voice Settings** für Gute-Nacht-Geschichten: `VoiceSettings(stability=0.6, speed=1.0)` (statt 1.1 für Shorts)
+  4. Alle Chunk-Audio-Dateien zu einer `Voiceover_Finale.mp3` zusammenführen (binäres Concat)
+  5. Temporäre Chunk-Dateien löschen
+
+---
+
+### 7. Service 6: Der Video-Editor (NEU)
+
+#### [NEW] `video_editor/__init__.py`
+#### [NEW] `video_editor/__main__.py`
+#### [NEW] `video_editor/main.py`
+
+Neuer Service, der mit **FFmpeg** ein Video aus 1 Bild + 1 Audio erstellt:
+
+1. Liest `output/finale_prompts.json` → prüft `mode: "long"`
+2. Nimmt `output/Cover.jpg` + `output/Voiceover_Finale.mp3`
+3. Ermittelt Audio-Länge via `ffprobe`
+4. Erstellt Video mit **Ken Burns Zoom-Effekt** (5% Zoom über die gesamte Dauer):
+   ```
+   ffmpeg -loop 1 -i Cover.jpg -i Voiceover_Finale.mp3 \
+     -filter_complex "zoompan=z='min(zoom+0.00005,1.05)':d=<frames>:s=1080x1920:fps=30" \
+     -c:v libx264 -preset slow -crf 18 -c:a aac -b:a 192k \
+     -shortest -pix_fmt yuv420p output/Final_Video.mp4
+   ```
+5. Ausgabe: `output/Final_Video.mp4` (9:16, 1080x1920)
+6. **FFmpeg-Check** beim Start: Klare Fehlermeldung wenn nicht installiert
+
+---
+
+### 8. Pipeline-Orchestrator (Separates Skript)
+
+#### [NEW] [run_long_pipeline.py](file:///c:/Projects/theodor-family-content-creator/run_long_pipeline.py)
+
+Komplett separates Skript, analog zu `run_pipeline.py`:
+
+```python
+# Service-Reihenfolge:
+services = [
+    ("Service 0: Librarian",        "trend_scout"),   # PDF-Auswahl
+    ("Service 1: Text-Cleaner",     "creator"),        # Rohtext bereinigen
+    ("Service 2: Story-Kritiker",   "art_director"),   # Text optimieren + 1 Bild-Prompt
+    ("Service 3A: Cover-Bild",      "image_generator"),# 1 Cover generieren
+    ("Service 3B: Ton-Meister",     "audio_generator"),# Audio Chunking (bis 12 Min)
+    ("Service 6: Video-Editor",     "video_editor"),   # FFmpeg: Bild + Audio → Video
+    ("Service 4: Archiver",         "archiver"),       # ZIP + Drive Upload
+]
+```
+
+- CLI: `python run_long_pipeline.py --channel betheo`
+- Setzt `THEODOR_PIPELINE_MODE=long` als Umgebungsvariable, damit jeder Service seinen Modus erkennt
+- Eigene Skip-Logik für Long-Form Output-Dateien
+
+---
+
+### 9. Archiver Anpassung
+
+#### [MODIFY] [main.py](file:///c:/Projects/theodor-family-content-creator/archiver/main.py)
+- `create_zip()`: `.mp4`-Dateien zusätzlich einschließen
+- Rest bleibt identisch (ZIP + SEO Upload + Cleanup)
+
+---
+
+## Zusammenfassung der Dateien
+
+| Datei | Aktion | Beschreibung |
+|-------|--------|--------------|
+| `input/shorts/` | MOVE | `artikel.txt` + `books/` hierhin verschieben |
+| `input/long/books/` | NEW | Leerer Ordner für Long-Form PDFs |
+| `trend_scout/config.py` | MODIFY | Getrennte History-Dateinamen, Shorts-Books-Pfad |
+| `trend_scout/main.py` | MODIFY | `run_from_long_books()`, History-Trennung |
+| `trend_scout/book_reader.py` | MODIFY | Konfigurierbarer `books_dir`, sequenzielles Lesen |
+| `creator/main.py` | MODIFY | Long-Form Text-Cleaner Modus |
+| `creator/script_writer.py` | MODIFY | Neue `clean_book_text()` Funktion |
+| `art_director/main.py` | MODIFY | Story-Kritiker + 1-Bild + Stimmen-Rotation |
+| `art_director/config.py` | MODIFY | Neuer `LONG_FORM_STORY_CRITIC_PROMPT` |
+| `image_generator/main.py` | MODIFY | Cover-Bild statt Szenen-Bilder |
+| `audio_generator/main.py` | MODIFY | Chunking + ruhige Voice Settings (speed=1.0) |
+| `video_editor/` | NEW | Kompletter neuer Service (FFmpeg Ken Burns) |
+| `run_long_pipeline.py` | NEW | Separater Pipeline-Orchestrator |
+| `archiver/main.py` | MODIFY | `.mp4` in ZIP einschließen |
+
+## Verification Plan
+
+### Automated Tests
+1. **Trockenlauf**: `python run_long_pipeline.py --channel betheo` – prüfen ob Service-Chain korrekt startet
+2. **FFmpeg Check**: `ffmpeg -version` muss verfügbar sein
+3. **Text-Cleaner**: Ein kurzes Test-PDF verarbeiten und Output prüfen
+4. **History-Migration**: Bestehende `historie.json` → `historie_shorts.json` korrekt umbenannt
+
+### Manual Verification
+1. Ein Test-PDF in `input/long/books/` legen
+2. Pipeline komplett durchlaufen lassen
+3. Finales Video (`Final_Video.mp4`) prüfen: Zoom-Effekt, Audio-Qualität, Chunk-Übergänge
+4. Historie prüfen: Kapitel in `historie_long.json` eingetragen
+5. Zweiter Lauf: Nächstes Kapitel wird automatisch gewählt

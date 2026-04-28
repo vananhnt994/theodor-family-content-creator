@@ -10,7 +10,10 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from trend_scout.config import OUTPUT_DIR, OUTPUT_FILENAME, HISTORY_FILENAME
+from trend_scout.config import (
+    OUTPUT_DIR, OUTPUT_FILENAME,
+    HISTORY_SHORTS_FILENAME, HISTORY_LONG_FILENAME, HISTORY_FILENAME
+)
 from trend_scout.scraper import scrape_headlines, scrape_article
 from trend_scout.analyzer import check_connection, pick_topic, generate_content
 
@@ -25,29 +28,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _load_history() -> list[dict]:
-    """Load existing topic history from historie.json."""
-    history_path = os.path.join(OUTPUT_DIR, HISTORY_FILENAME)
+def _load_history(mode: str = "shorts") -> list[dict]:
+    """Load existing topic history (shorts or long mode)."""
+    filename = HISTORY_LONG_FILENAME if mode == "long" else HISTORY_SHORTS_FILENAME
+    history_path = os.path.join(OUTPUT_DIR, filename)
     if os.path.exists(history_path):
         try:
             with open(history_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            logger.info(f"[Historie] {len(data)} bisherige Themen geladen")
+            logger.info(f"[Historie/{mode}] {len(data)} bisherige Einträge geladen")
             return data
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"[Historie] Fehler beim Laden: {e} – starte leer")
+            logger.warning(f"[Historie/{mode}] Fehler beim Laden: {e} – starte leer")
     return []
 
 
-def _save_to_history(entry: dict) -> None:
-    """Append a topic entry to historie.json."""
+def _save_to_history(entry: dict, mode: str = "shorts") -> None:
+    """Append a topic entry to the appropriate history file."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    history_path = os.path.join(OUTPUT_DIR, HISTORY_FILENAME)
-    history = _load_history()
+    filename = HISTORY_LONG_FILENAME if mode == "long" else HISTORY_SHORTS_FILENAME
+    history_path = os.path.join(OUTPUT_DIR, filename)
+    history = _load_history(mode)
     history.append(entry)
     with open(history_path, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
-    logger.info(f"[Historie] Neues Thema gespeichert → {len(history)} Einträge total")
+    logger.info(f"[Historie/{mode}] Neues Thema gespeichert → {len(history)} Einträge total")
 
 
 def _parse_artikel_file(filepath: str) -> tuple[str, str]:
@@ -181,61 +186,47 @@ def run_from_file(filepath: str):
 
 
 def run_from_books():
-    """Execute the Trend Scout pipeline using a chapter from the books in input/books/."""
+    """Execute the Trend Scout pipeline using a chapter from input/shorts/books/."""
     logger.info("=" * 60)
-    logger.info("📚 SERVICE 0: BUCH-MODUS")
+    logger.info("📚 SERVICE 0: BUCH-MODUS (Shorts)")
     logger.info("=" * 60)
 
-    # ------------------------------------------------------------------
-    # Step 0: Check Gemini connection
-    # ------------------------------------------------------------------
     logger.info("")
     logger.info("📡 Prüfe Gemini-Verbindung...")
     if not check_connection():
         logger.error("❌ Pipeline abgebrochen: API Fehler")
         sys.exit(1)
 
-    # ------------------------------------------------------------------
-    # Step 1: Read chapter from book
-    # ------------------------------------------------------------------
-    from trend_scout.book_reader import run_book_reader
-    
+    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_SHORTS
     logger.info("")
-    logger.info("📖 Wähle ungelesenes Kapitel aus Büchern...")
+    logger.info("📖 Wähle ungelesenes Kapitel aus Büchern (Shorts)...")
     logger.info("-" * 40)
-    
-    history = _load_history()
-    book_data = run_book_reader(history)
-    
+
+    history = _load_history(mode="shorts")
+    book_data = run_book_reader(history, books_dir=BOOKS_DIR_SHORTS, sequential=False)
+
     if not book_data:
         sys.exit(1)
-        
+
     topic = {
         "title": book_data["chapter_title"],
         "source": book_data["book_filename"],
         "url": book_data["chapter_id"]
     }
-    
-    # ------------------------------------------------------------------
-    # Step 2: Generate content via Gemini (title/description/solution)
-    # ------------------------------------------------------------------
+
     logger.info("")
     logger.info("✍️  Schritt 2: Content generieren (description + solution)...")
     logger.info("-" * 40)
-    
+
     content = generate_content(topic, book_data["text"])
-    
     if not content:
         logger.error("❌ Pipeline abgebrochen: Content-Generierung fehlgeschlagen")
         sys.exit(1)
-        
-    # ------------------------------------------------------------------
-    # Save output
-    # ------------------------------------------------------------------
+
     logger.info("")
     logger.info("💾 Ergebnis speichern...")
     logger.info("-" * 40)
-    
+
     output = {
         "title": content["title"],
         "description": content["description"],
@@ -247,14 +238,11 @@ def run_from_books():
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
-
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
-
     logger.info(f"✅ Gespeichert: {output_path}")
 
-    # Append to history
-    _save_to_history(output)
+    _save_to_history(output, mode="shorts")
     logger.info("")
     logger.info("=" * 60)
     logger.info("📋 ERGEBNIS")
@@ -267,7 +255,60 @@ def run_from_books():
     logger.info(f"   Timestamp:   {output['timestamp']}")
     logger.info("=" * 60)
     logger.info("🎉 Buchkapitel erfolgreich verarbeitet!")
+    return output
 
+
+def run_from_long_books():
+    """Librarian mode: pick the next unread chapter from input/long/books/ and
+    save the full raw text to thema.json (no Gemini call needed)."""
+    logger.info("=" * 60)
+    logger.info("📚 SERVICE 0: LIBRARIAN-MODUS (Long-Form)")
+    logger.info("=" * 60)
+
+    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_LONG
+    logger.info("")
+    logger.info("📖 Wähle nächstes ungelesenes Kapitel (Long-Form, sequenziell)...")
+    logger.info("-" * 40)
+
+    history = _load_history(mode="long")
+    book_data = run_book_reader(history, books_dir=BOOKS_DIR_LONG, sequential=True)
+
+    if not book_data:
+        logger.error("❌ Kein ungelesenes Kapitel in input/long/books/ gefunden.")
+        sys.exit(1)
+
+    logger.info("")
+    logger.info("💾 Ergebnis speichern (kein LLM-Aufruf – Rohtext direkt aus PDF)...")
+    logger.info("-" * 40)
+
+    output = {
+        "title": book_data["chapter_title"],
+        "description": "",
+        "solution": "",
+        "source": book_data["book_filename"],
+        "source_url": book_data["chapter_id"],
+        "full_text": book_data["text"],
+        "mode": "long",
+        "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+    }
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+    logger.info(f"✅ Gespeichert: {output_path}")
+
+    _save_to_history(output, mode="long")
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("📋 ERGEBNIS")
+    logger.info("=" * 60)
+    logger.info(f"   Buch:        {output['source']}")
+    logger.info(f"   Kapitel:     {output['title']}")
+    logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
+    logger.info(f"   Timestamp:   {output['timestamp']}")
+    logger.info("=" * 60)
+    logger.info("🎉 Long-Form Kapitel erfolgreich ausgewählt!")
     return output
 
 
@@ -303,7 +344,7 @@ def main():
     # ------------------------------------------------------------------
     # Filter: Remove already-used topics (by URL)
     # ------------------------------------------------------------------
-    history = _load_history()
+    history = _load_history(mode="shorts")
     used_urls = {entry.get("source_url", "") for entry in history}
     original_count = len(headlines)
     headlines = [h for h in headlines if h.get("url", "") not in used_urls or not h.get("url")]
@@ -371,7 +412,7 @@ def main():
     logger.info(f"✅ Gespeichert: {output_path}")
 
     # Append to history
-    _save_to_history(output)
+    _save_to_history(output, mode="shorts")
     logger.info("")
     logger.info("=" * 60)
     logger.info("📋 ERGEBNIS")

@@ -43,7 +43,7 @@ def create_zip(archive_path: str):
     with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(INPUT_DIR):
             for file in files:
-                if file.endswith((".json", ".jpg", ".wav", ".mp3", ".md")):
+                if file.endswith((".json", ".jpg", ".wav", ".mp3", ".mp4", ".md")):
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, INPUT_DIR)
                     zipf.write(file_path, arcname)
