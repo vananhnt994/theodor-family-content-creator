@@ -40,7 +40,43 @@ def main():
         data = json.load(f)
         
     scenes = data.get("scenes", [])
-    
+
+    # ------------------------------------------------------------------
+    # Long-Form mode: generate a single cover image
+    # ------------------------------------------------------------------
+    if data.get("mode") == "long":
+        cover = data.get("cover_image", {})
+        prompt = cover.get("bild_prompt")
+        if not prompt:
+            logger.error("✗ Kein 'bild_prompt' in cover_image gefunden.")
+            sys.exit(1)
+
+        out_path = os.path.join(OUTPUT_DIR, "Cover.jpg")
+        if os.path.exists(out_path):
+            logger.info(f"Cover existiert bereits ({out_path}). Überspringe Generierung...")
+        else:
+            logger.info("🎨 Generiere Cover-Bild (9:16) via Vertex AI...")
+            try:
+                images = model.generate_images(
+                    prompt=prompt,
+                    number_of_images=1,
+                    language="en",
+                    aspect_ratio="9:16",
+                )
+                if images:
+                    images[0].save(location=out_path)
+                    logger.info(f"✓ Cover gespeichert: {out_path}")
+                else:
+                    logger.error("✗ Kein Bild erhalten.")
+                    sys.exit(1)
+            except Exception as e:
+                logger.error(f"✗ Fehler bei Cover-Generierung: {e}")
+                sys.exit(1)
+        return
+
+    # ------------------------------------------------------------------
+    # Shorts mode: generate per-scene images
+    # ------------------------------------------------------------------
     has_error = False
     for scene in scenes:
         sn = scene.get("scene_number")

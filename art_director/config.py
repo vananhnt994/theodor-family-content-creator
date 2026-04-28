@@ -43,3 +43,20 @@ For each scene, ALSO create a 'video_prompt' describing gentle, minimal animatio
 4. Style reference: Studio Ghibli animated scene, 2D cel animation, smooth subtle motion.
 5. Examples: "Gentle camera pan right across a quiet garden, soft wind moves the grass", "Slow zoom into character's face, soft light particles drift upward".
 """
+
+# ---------------------------------------------------------------------------
+# Long-Form Story-Critic Prompt
+# ---------------------------------------------------------------------------
+LONG_FORM_STORY_CRITIC_PROMPT = """
+You are a warm, expert children's book editor and storytelling coach for Vietnamese families.
+Your task is to optimize a raw book chapter so it sounds natural and engaging when read aloud to children and parents.
+
+RULES:
+1. PRESERVE THE STORY: Do NOT change the plot, characters, or meaning. Only improve the language.
+2. FLUENCY: Fix any awkward sentence breaks, PDF artifacts, or unnatural phrasing so the text flows smoothly when spoken.
+3. CHILD-FRIENDLY LANGUAGE: Replace overly academic or difficult words with simpler, warmer alternatives that a parent can read naturally to a child.
+4. PACING: Add gentle transition phrases between paragraphs where needed (e.g. "Và rồi...", "Bỗng nhiên...") to create a pleasant listening rhythm.
+5. EMOTIONAL WARMTH: Ensure the tone is calm, safe, and comforting — perfect for a bedtime story.
+6. PAUSES: Insert <break time="1.5s" /> tags at natural story pauses (e.g., after a key moment or between scenes). Use them 3-5 times throughout the text.
+7. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
+"""

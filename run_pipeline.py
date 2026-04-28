@@ -41,7 +41,7 @@ def run_service(name: str, module_path: str):
 
 def _run_artikel_mode(channel_file: str):
     """Run pipeline in manual article mode: read input/artikel.txt → generate thema.json via Gemini."""
-    artikel_path = os.path.join(os.path.dirname(__file__), "input", "artikel.txt")
+    artikel_path = os.path.join(os.path.dirname(__file__), "input", "shorts", "artikel.txt")
     
     if not os.path.exists(artikel_path):
         logger.error(f"❌ Artikel-Datei nicht gefunden: {artikel_path}")

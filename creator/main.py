@@ -17,7 +17,7 @@ from creator.config import (
     OUTPUT_FILENAME,
     TARGET_DURATION_SECONDS,
 )
-from creator.script_writer import generate_voiceover, split_into_scenes
+from creator.script_writer import generate_voiceover, split_into_scenes, clean_book_text
 
 # ---------------------------------------------------------------------------
 # Logging Setup
@@ -76,7 +76,58 @@ def main():
     logger.info(f"   Quelle: {thema.get('source', '???')}")
 
     # ------------------------------------------------------------------
-    # Step 2: Generate voiceover script
+    # Long-Form mode: text cleaning instead of voiceover generation
+    # ------------------------------------------------------------------
+    if thema.get("mode") == "long":
+        logger.info("")
+        logger.info("📖 Long-Form Modus erkannt: Starte Text-Cleaner...")
+        logger.info("-" * 40)
+
+        raw_text = thema.get("full_text", "")
+        if not raw_text:
+            logger.error("❌ Pipeline abgebrochen: 'full_text' fehlt in thema.json")
+            sys.exit(1)
+
+        cleaned = clean_book_text(raw_text)
+        if not cleaned:
+            logger.error("❌ Pipeline abgebrochen: Text-Bereinigung fehlgeschlagen")
+            sys.exit(1)
+
+        output = {
+            "video_title": thema.get("title", ""),
+            "mode": "long",
+            "cleaned_text": cleaned["cleaned_text"],
+            "word_count": cleaned["word_count"],
+            "estimated_duration_minutes": cleaned["estimated_duration_minutes"],
+            "seo": {},
+            "source_thema": {
+                "title": thema.get("title", ""),
+                "source": thema.get("source", ""),
+                "source_url": thema.get("source_url", ""),
+            },
+            "generated_at": datetime.now(timezone.utc).astimezone().isoformat(),
+        }
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"✅ Gespeichert: {output_path}")
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("📋 ERGEBNIS (Long-Form)")
+        logger.info("=" * 60)
+        logger.info(f"   Titel:       {output['video_title']}")
+        logger.info(f"   Wörter:      {output['word_count']}")
+        logger.info(f"   Dauer ~:     {output['estimated_duration_minutes']} Min.")
+        logger.info(f"   Generiert:   {output['generated_at']}")
+        logger.info("=" * 60)
+        logger.info("🎉 Service 1 (Long-Form) erfolgreich abgeschlossen!")
+        return output
+
+    # ------------------------------------------------------------------
+    # Shorts mode: Generate voiceover script
     # ------------------------------------------------------------------
     logger.info("")
     logger.info(f"📝 Schritt 1: Voiceover-Skript generieren (~{TARGET_DURATION_SECONDS}s)...")
