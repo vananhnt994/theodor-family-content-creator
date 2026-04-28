@@ -56,13 +56,14 @@ def main():
         logger.error("✗ Kein Voiceover-Text in den Szenen gefunden.")
         sys.exit(1)
         
-    # Texte mit kleinem Abstand (1 Sekunde) verbinden.
-    full_text = ' <break time="1.0s" /> '.join(full_text_fragments)
+    # Texte mit sehr kurzem Abstand (0.5 Sekunden) verbinden für mehr Dynamik.
+    full_text = ' <break time="0.5s" /> '.join(full_text_fragments)
     
     out_path = os.path.join(OUTPUT_DIR, "Voiceover_Finale.mp3")
     if os.path.exists(out_path):
         logger.info(f"Audio existiert bereits ({out_path}). Überspringe Generierung...")
     else:
+        from elevenlabs import VoiceSettings
         logger.info(f"🎙️ Generiere gemeinsames Voiceover mit Stimme '{selected_voice}' (ID: {voice_id})...")
         try:
             audio_generator = client.text_to_speech.convert(
@@ -70,6 +71,13 @@ def main():
                 output_format="mp3_44100_128",
                 text=full_text,
                 model_id="eleven_v3",
+                voice_settings=VoiceSettings(
+                    stability=0.45,
+                    similarity_boost=0.75,
+                    style=0.0,
+                    use_speaker_boost=True,
+                    speed=1.1
+                )
             )
             with open(out_path, "wb") as f_out:
                 for chunk in audio_generator:

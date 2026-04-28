@@ -31,15 +31,23 @@ def get_oauth_credentials():
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            from google.auth.exceptions import RefreshError
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                logger.warning("⚠ Refresh Token ungültig. Lösche 'token.json' und starte neuen Login...")
+                if os.path.exists('token.json'):
+                    os.remove('token.json')
+                creds = None
+        
+        if not creds:
             if not os.path.exists('client_secret.json'):
                 logger.error("Bitte lade die OAuth Client ID als 'client_secret.json' herunter!")
                 sys.exit(1)
             flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
     return creds
 
 def get_drive_service(creds):
@@ -81,20 +89,27 @@ def move_file_in_drive(drive_service, file_id, previous_parents, new_parent):
 # --- Multiplex Upload Stubs ---
 
 def upload_youtube(video_id, seo_data):
+    # Feste, unveränderbare Liste von Hashtags für BeTheo - Family
+    static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
+    full_description = f"{seo_data.get('description', '')}\n\n{static_hashtags}"
+    
     # TODO: Echter Upload mit youtube API client
     logger.info("   -> [YouTube] Dummy-Upload wird ausgeführt...")
     logger.info(f"      Titel: {seo_data.get('title')}")
+    logger.info(f"      Angehängte Hashtags: {static_hashtags}")
     # Return True on success
     return True
 
 def upload_meta(video_id, seo_data):
+    static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
     # TODO: Echter Upload via Graph API
-    logger.info("   -> [Meta/IG] Upload steht auf Standby (API Keys fehlen).")
+    logger.info(f"   -> [Meta/IG] Upload steht auf Standby (API Keys fehlen). Hashtags: {static_hashtags}")
     return True
 
 def upload_tiktok(video_id, seo_data):
+    static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
     # TODO: Echter Upload via TikTok Direct Post
-    logger.info("   -> [TikTok] Upload steht auf Standby (API Keys fehlen).")
+    logger.info(f"   -> [TikTok] Upload steht auf Standby (API Keys fehlen). Hashtags: {static_hashtags}")
     return True
 
 def main():

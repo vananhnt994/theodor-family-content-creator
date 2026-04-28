@@ -35,20 +35,17 @@ TARGET_SCENE_COUNT = 10             # ~10 Szenen (realistisch für 60s)
 # ---------------------------------------------------------------------------
 # System Prompt: Der Redakteur
 # ---------------------------------------------------------------------------
-# Die KI denkt AUTOMATISCH als professioneller Redakteur und Creator.
-# Der System-Prompt wird bei JEDEM Aufruf mitgeschickt.
-SYSTEM_PROMPT = f"""Du bist ein einfühlsamer, preisgekrönter Drehbuchautor für emotionale 60-Sekunden-Animationsfilme über {channel_cfg.get('topic', 'den Familienalltag')}.
-Deine Aufgabe: Erzähle die Situation und Problematik aus dem übergebenen Thema nachvollziehbar und einfühlsam. Gib im Anschluss die passenden Vorschläge und Ratschläge.
-Entscheide basierend auf dem Artikel, ob es wirkungsvoller ist, eine authentische Geschichte aus der Ich-Perspektive (z.B. Mama, Papa oder Kind) zu erfinden, oder als neutraler Erzähler zu berichten. Biete in jedem Fall sanfte Lösungen an.
-KEINE harten Aufzählungen oder reinen Theorie-Tipps! Der Text muss wie eine einfühlsame Unterhaltung fließen.
+SYSTEM_PROMPT = f"""Du bist ein direkter, faktischer Drehbuchautor für informative 60-Sekunden-Shorts über {channel_cfg.get('topic', 'den Familienalltag')}.
+Deine Aufgabe: Bringe das Thema präzise auf den Punkt. Liefere harte Fakten und klare Aussagen, keine Umschweife. Entscheide basierend auf dem Artikel, ob es wirkungsvoller ist, eine authentische Geschichte aus der Ich-Perspektive zu erfinden, oder als neutraler Erzähler zu berichten.
 
 STRIKTE REGELN:
 1. Sprache: Das Voiceover (voiceover_text) MUSS auf {channel_cfg.get('language', 'Vietnamesisch')} geschrieben sein.
-2. Länge: Das Voiceover muss exakt für ca. 60 Sekunden Laufzeit ausgelegt sein (insgesamt ca. 100 bis 120 Wörter).
+2. Länge (HARTES LIMIT): Schreibe maximal 130 bis 140 Wörter. Jeder Text, der länger ist, wird abgelehnt. Dies zwingt das Audio, sicher unter 59 Sekunden zu bleiben.
 3. Szenen: Erstelle exakt 4 bis 6 chronologische visuelle Szenen.
-4. Stille (Ma): Das Voiceover darf nicht ununterbrochen durchreden. Füge an emotionalen Stellen mindestens zwei Mal das Tag <break time="2.0s" /> in den {channel_cfg.get('language', 'vietnamesischen')} Text ein, um Pausen zu erzwingen.
-5. Hook: Beginne direkt in der Handlung (In medias res) mit einem starken Bild. Keine Begrüßung.
-6. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. GIB DEN CHARAKTEREN KEINE NAMEN! Nutze Rollen (z.B. "a mother", "a 5-year-old girl").
+4. Stille (Ma): Füge an emotionalen Stellen mindestens zwei Mal das Tag <break time="1.0s" /> in den {channel_cfg.get('language', 'vietnamesischen')} Text ein.
+5. Hook: Der allererste Satz MUSS eine provokante Frage oder ein direkter Schmerzpunkt für Eltern sein (z. B. 'Mẹ càng bao bọc, con trai càng vô dụng!'). Keine ruhige Szene am Anfang.
+6. Stil: Verwende keine poetischen Beschreibungen wie 'die Uhr tickt' oder 'ein unordentliches Zimmer'. Liefere nur harte Fakten, Ratschläge und klare Aussagen. Am Ende lieferst du genau, was der Wert von dem Inhalt direkt ist.
+7. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. GIB DEN CHARAKTEREN KEINE NAMEN! Nutze Rollen (z.B. "a mother", "a 5-year-old girl").
 
 Halte dich bei der Formatierung exakt an die im jeweiligen Schritt geforderte JSON-Struktur!
 """
@@ -65,31 +62,31 @@ Lösung/Rat: {{solution}}
 AUFGABE:
 Schreibe ein professionelles Voiceover-Drehbuch für ein {{duration}}-Sekunden-Video (TikTok/YouTube Shorts).
 
-STIMMUNG: Analysiere das Thema und bestimme die passende Grundstimmung.
-Die Stimmung muss IMMER ruhig und warm sein – wie eine Gute-Nacht-Geschichte.
-Auch bei ernsten Themen: Der Ton bleibt sanft, ermutigend und tröstend.
+STRIKTE LÄNGEN-REGEL:
+Schreibe maximal 130 bis 140 Wörter. Jeder Text, der länger ist, wird abgelehnt.
+
+STIMMUNG: Analysiere das Thema und bestimme die passende Grundstimmung (z.B. direkt, ernst, informativ).
 
 STORYTELLING-STRUKTUR (in dieser Reihenfolge):
-1. EMOTIONALER HOOK (erste 5 Sekunden): Starte mit einer einfühlsamen Frage oder einer Beschreibung, die die emotionale Kernthematik des Artikels trực tiếp. Kein "Hallo" oder "Wusstest du...?"
-2. DIE SITUATION (20 Sekunden): Erkläre die Problematik oder Situation aus dem Artikel. Entscheide hierbei dynamisch, ob du die Geschichte aus der Ich-Perspektive eines Betroffenen (z.B. Mama, Papa, Kind) erzählst, um es greifbarer zu machen, oder ob du als neutraler Erzähler berichtest. Der Zuschauer soll sich in jedem Fall verstanden fühlen. WICHTIG: Erfasse die *echte* psychologische oder inhaltliche Tiefe des Themas.
-3. VORSCHLÄGE & LÖSUNGEN (25 Sekunden): Teile die *konkreten* Ratschläge und Lösungsansätze *exakt aus dem Artikel*. Erfinde keine flachen, allgemeinen Trostfloskeln. GANZ WICHTIG: Wenn das Thema ein Rätsel, eine mathematische Aufgabe oder eine spezifische Geschichte ist (z.B. 17 Kamele aufteilen), MUSS die genaue Lösung (die konkreten Rechenschritte oder logischen Schritte) zwingend und verständlich im Voiceover erklärt werden! Präsentiere die Vorschläge fließend im Text.
-4. WARME BOTSCHAFT (10 Sekunden): Ende mit einer tröstenden, ermutigenden Botschaft, die Kraft gibt, basierend auf dem echten Artikel-Fazit. Kein hartes Belehren.
+1. HARTER HOOK (erste 5 Sekunden): Der allererste Satz MUSS eine provokante Frage oder ein direkter Schmerzpunkt für Eltern sein (z. B. 'Mẹ càng bao bọc, con trai càng vô dụng!'). Beginne auf keinen Fall mit einer ruhigen Szene.
+2. DIE SITUATION (20 Sekunden): Erkläre die Problematik oder Situation aus dem Artikel. Entscheide hierbei dynamisch, ob du die Geschichte aus der Ich-Perspektive eines Betroffenen erzählst oder ob du als neutraler Erzähler berichtest.
+3. VORSCHLÄGE & LÖSUNGEN (25 Sekunden): Teile die *konkreten* Ratschläge und Lösungsansätze *exakt aus dem Artikel*. Wenn das Thema eine spezifische logische Aufgabe ist, erkläre sie zwingend.
+4. DIREKTER WERT (10 Sekunden): Am Ende lieferst du genau, was der Wert von dem Inhalt direkt ist.
 
-STIL-REGELN:
-- Schreibe so, als würde eine ruhige, warme Stimme eine Geschichte am Lagerfeuer erzählen
-- KEINE Listen, KEINE Aufzählungen, KEINE Tipps-Formate
-- Nur fließender, emotionaler Erzähltext
-- Verwende kurze, poetische Sätze mit viel Gefühl
-- Füge mindestens 2x das Tag <break time="2.0s" /> an emotionalen Stellen ein
+STIL-REGELN (SHOW, DON'T TELL):
+- Verwende keine poetischen Beschreibungen wie 'die Uhr tickt' oder 'ein unordentliches Zimmer'.
+- Liefere nur harte Fakten, Ratschläge und klare Aussagen.
+- KEINE Romantik-Stile oder pure Theorie-Listen.
+- Nur fließender, direkter Erzähltext.
+- Füge mindestens 2x das Tag <break time="1.0s" /> an wichtigen Stellen ein.
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
 {{{{
-  "mood": "<stimmung des videos, z.B.: warm und nachdenklich>",
-  "voiceover_full": "<der komplette Voiceover-Text als ein zusammenhängender Text, auf {channel_cfg.get('language', 'Vietnamesisch')}, ca. {{duration}} Sekunden gesprochen>",
+  "mood": "<stimmung des videos, z.B.: ernst und informativ>",
+  "voiceover_full": "<der komplette Voiceover-Text als ein zusammenhängender Text, auf {channel_cfg.get('language', 'Vietnamesisch')}>",
   "seo": {{{{
     "title": "<Ein klickstarker, neugierig machender Titel auf {channel_cfg.get('language', 'Vietnamesisch')}, max. 60 Zeichen>",
-    "description": "<SEO-optimierte Videobeschreibung. Erste zwei Sätze mit den wichtigsten Suchbegriffen>",
-    "hashtags": "<Exakt 5 spitze Hashtags auf {channel_cfg.get('language', 'Vietnamesisch')}, durch Leerzeichen getrennt>"
+    "description": "<SEO-optimierte Videobeschreibung. Erste zwei Sätze mit den wichtigsten Suchbegriffen>"
   }}}}
 }}}}"""
 
