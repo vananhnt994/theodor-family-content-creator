@@ -25,18 +25,29 @@ SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 def create_storyboard(data: dict) -> str:
     sb_path = os.path.join(INPUT_DIR, "Storyboard.md")
+    mode = data.get("mode", "shorts")
     with open(sb_path, "w", encoding="utf-8") as f:
         f.write(f"# 🎬 {data.get('video_title', 'Video Storyboard')}\n\n")
         f.write(f"**Stimme:** {data.get('selected_voice', 'Unbekannt')}\n\n")
-        for scene in data.get("scenes", []):
-            sn = scene.get("scene_number")
-            f.write(f"## Szene {sn}\n")
-            f.write(f"**Voiceover:** {scene.get('voiceover_text')}\n\n")
-            f.write(f"**Bild-Prompt (Final):** {scene.get('bild_prompt')}\n\n")
-            video_prompt = scene.get('video_prompt')
-            if video_prompt:
-                f.write(f"**Video-Prompt:** {video_prompt}\n\n")
-            f.write("---\n")
+        f.write(f"**Modus:** {mode.upper()}\n\n")
+        if mode == "long":
+            # Long-Form: include the full optimized text instead of scenes
+            f.write(f"**Dauer:** ~{data.get('estimated_duration_minutes', '?')} Min.\n\n")
+            f.write("---\n\n")
+            f.write("## Vorlese-Text (optimiert)\n\n")
+            f.write(data.get("optimized_text", data.get("cleaned_text", "(kein Text)")))
+            f.write("\n\n---\n")
+        else:
+            # Shorts: scene-by-scene storyboard
+            for scene in data.get("scenes", []):
+                sn = scene.get("scene_number")
+                f.write(f"## Szene {sn}\n")
+                f.write(f"**Voiceover:** {scene.get('voiceover_text')}\n\n")
+                f.write(f"**Bild-Prompt (Final):** {scene.get('bild_prompt')}\n\n")
+                video_prompt = scene.get('video_prompt')
+                if video_prompt:
+                    f.write(f"**Video-Prompt:** {video_prompt}\n\n")
+                f.write("---\n")
     return sb_path
 
 def create_zip(archive_path: str):
@@ -85,10 +96,12 @@ def upload_to_drive(file_path: str, filename: str, folder_id: str, mimetype: str
     return file
 
 def cleanup_output_dir():
-    logger.info("🧹 Bereinige output-Ordner (behalte historie.json)...")
+    logger.info("🧹 Bereinige output-Ordner (behalte Historien)...")
+    # Files to always keep across runs
+    KEEP_FILES = {"historie.json", "historie_shorts.json", "historie_long.json"}
     for root, _, files in os.walk(INPUT_DIR):
         for file in files:
-            if file != "historie.json":
+            if file not in KEEP_FILES:
                 file_path = os.path.join(root, file)
                 try:
                     os.remove(file_path)
@@ -138,27 +151,41 @@ def main():
         json.dump(seo_data, f, ensure_ascii=False, indent=2)
     logger.info(f"✓ SEO-Datei gepackt: {seo_path}")
 
-    # 3. Upload zu Google Drive
+    # 3. Upload zu Google Drive – Ordner basierend auf Modus
     channel_cfg = load_channel_config()
     drive_folders = channel_cfg.get("drive_folders", {})
-    
-    folder_id = drive_folders.get("archive")
-    if not folder_id:
-        folder_id = os.environ.get("DRIVE_FOLDER_ID") # Fallback
+    mode = data.get("mode", "shorts")
+
+    if mode == "long":
+        folder_id = drive_folders.get("long_archive")
+        seo_folder_id = drive_folders.get("long_seos")
+        if folder_id and folder_id.startswith("REPLACE_"):
+            logger.warning("⚠ Long-Form Drive-Ordner noch nicht konfiguriert! Bitte IDs in channels/betheo.json eintragen.")
+            logger.warning("   Felder: 'long_archive' und 'long_seos'")
+            folder_id = None
+    else:
+        folder_id = drive_folders.get("archive")
+        seo_folder_id = drive_folders.get("seos")
+
+    if not folder_id and mode == "shorts":
+        folder_id = os.environ.get("DRIVE_FOLDER_ID")  # Fallback für Shorts
         logger.warning("⚠ Archiv-Ordner fehlt in Config. Nutze Fallback...")
 
     try:
-        logger.info("☁️  Lade Archiv und SEO zu Google Drive hoch...")
-        file_res = upload_to_drive(zip_path, zip_name, folder_id, mimetype="application/zip")
-        logger.info(f"✓ Zip Upload erfolgreich! Link: {file_res.get('webViewLink')}")
-        
-        seo_folder_id = drive_folders.get("seos")
-        if seo_folder_id:
+        if folder_id:
+            logger.info(f"☁️  Lade Archiv zu Google Drive hoch (Modus: {mode.upper()})...")
+            file_res = upload_to_drive(zip_path, zip_name, folder_id, mimetype="application/zip")
+            logger.info(f"✓ Zip Upload erfolgreich! Link: {file_res.get('webViewLink')}")
+        else:
+            logger.warning("⚠ Kein Drive-Ordner konfiguriert – Überspringe Upload.")
+
+        if seo_folder_id and not seo_folder_id.startswith("REPLACE_"):
             seo_res = upload_to_drive(seo_path, seo_name, seo_folder_id, mimetype="application/json")
             logger.info(f"✓ SEO Upload in SEOs-Ordner erfolgreich! Link: {seo_res.get('webViewLink')}")
         else:
-            logger.warning("⚠ SEOs-Ordner fehlt in Config!")
-            
+            if mode == "shorts":
+                logger.warning("⚠ SEOs-Ordner fehlt in Config!")
+
         # 4. Ordner aufräumen
         cleanup_output_dir()
     except Exception as e:
