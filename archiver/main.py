@@ -54,14 +54,22 @@ def get_oauth_credentials():
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
+            from google.auth.exceptions import RefreshError
+            try:
+                creds.refresh(Request())
+            except RefreshError:
+                logger.warning("⚠ Refresh Token ungültig. Lösche 'token.json' und starte neuen Login...")
+                if os.path.exists('token.json'):
+                    os.remove('token.json')
+                creds = None
+        
+        if not creds:
             if not os.path.exists('client_secret.json'):
                 raise FileNotFoundError("Bitte lade die OAuth Client ID als 'client_secret.json' in den Ordner herunter!")
             flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
     return creds
 
 def upload_to_drive(file_path: str, filename: str, folder_id: str, mimetype: str = "application/zip"):

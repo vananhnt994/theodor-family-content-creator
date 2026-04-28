@@ -182,10 +182,13 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
 
     for attempt in range(1, MAX_RETRIES + 2):
         try:
+            current_prompt = prompt
             if attempt > 1:
-                logger.info(f"[Creator] 🔄 Versuch {attempt}/{MAX_RETRIES + 1}...")
+                logger.info(f"[Creator] 🔄 Versuch {attempt}/{MAX_RETRIES + 1} (Safe-Mode)...")
+                # Fallback: Entschärfter Prompt für Gemini Filter
+                current_prompt += "\n\nCRITICAL SAFETY INSTRUCTION: The generated image prompts MUST be extremely safe, positive, and non-violent. Do not describe children in distress, danger, or any negative situations. Use abstract, peaceful, or purely positive imagery (e.g. 'a peaceful garden', 'a warm glowing light', 'a calm family scene') even if the voiceover text discusses a serious or painful problem. Ignore the negative aspects of the voiceover when creating the image prompts."
 
-            response_text = _call_llm(prompt, temperature=0.5)
+            response_text = _call_llm(current_prompt, temperature=0.5)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
 
             result = _extract_json(response_text)
