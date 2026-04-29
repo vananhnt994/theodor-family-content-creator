@@ -259,35 +259,69 @@ def run_from_books():
 
 
 def run_from_long_books():
-    """Librarian mode: pick the next unread chapter from input/long/books/ and
-    save the full raw text to thema.json (no Gemini call needed)."""
+    """Librarian mode: Generates a completely new bedtime story using Gemini instead of reading from a PDF."""
     logger.info("=" * 60)
-    logger.info("📚 SERVICE 0: LIBRARIAN-MODUS (Long-Form)")
+    logger.info("📚 SERVICE 0: STORYTELLER-MODUS (Long-Form KI-Generierung)")
     logger.info("=" * 60)
 
-    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_LONG
-    logger.info("")
-    logger.info("📖 Wähle nächstes ungelesenes Kapitel (Long-Form, sequenziell)...")
-    logger.info("-" * 40)
+    import google.generativeai as genai
+    from trend_scout.config import GEMINI_MODEL
 
-    history = _load_history(mode="long")
-    book_data = run_book_reader(history, books_dir=BOOKS_DIR_LONG, sequential=True)
-
-    if not book_data:
-        logger.error("❌ Kein ungelesenes Kapitel in input/long/books/ gefunden.")
+    if not check_connection():
+        logger.error("❌ Pipeline abgebrochen: API Fehler")
         sys.exit(1)
 
     logger.info("")
-    logger.info("💾 Ergebnis speichern (kein LLM-Aufruf – Rohtext direkt aus PDF)...")
+    logger.info("📖 Lasse KI eine neue Gute-Nacht-Geschichte erfinden (10-25 Min)...")
+    logger.info("-" * 40)
+
+    try:
+        model = genai.GenerativeModel(GEMINI_MODEL)
+        
+        prompt = """Bạn là một nhà văn thiếu nhi xuất sắc. Hãy sáng tác một câu chuyện cổ tích / chuyện kể trước khi đi ngủ hoàn toàn mới bằng tiếng Việt.
+YÊU CẦU QUAN TRỌNG:
+1. Câu chuyện phải RẤT DÀI và CHI TIẾT (khoảng 2000 đến 3500 từ), đủ để đọc to trong khoảng 10 đến 25 phút. Đừng tóm tắt, hãy kể thật chi tiết từng hành động, lời thoại.
+2. Mỗi câu chuyện PHẢI TRUYỀN TẢI RÕ RÀNG 1 BÀI HỌC VỀ PHẨM CHẤT TỐT ĐẸP (ví dụ: lòng dũng cảm, sự trung thực, lòng nhân ái, sự kiên nhẫn, lòng biết ơn, v.v.) một cách rất rõ ràng và dễ hiểu cho trẻ em.
+3. Nội dung ấm áp, giàu trí tưởng tượng, phù hợp cho trẻ em nghe trước khi ngủ.
+4. Không copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới.
+5. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
+{
+  "title": "Tên câu chuyện",
+  "story": "Nội dung chi tiết của câu chuyện..."
+}"""
+        response = model.generate_content(prompt, generation_config=genai.GenerationConfig(temperature=0.7))
+        
+        text_resp = response.text.strip()
+        if text_resp.startswith("```json"):
+            text_resp = text_resp[7:]
+        if text_resp.endswith("```"):
+            text_resp = text_resp[:-3]
+            
+        story_data = json.loads(text_resp.strip())
+        chapter_title = story_data.get("title", "Gute Nacht Geschichte")
+        chapter_text = story_data.get("story", "")
+        
+        if not chapter_text or len(chapter_text) < 500:
+            logger.error("❌ KI hat keine ausreichend lange Geschichte generiert.")
+            sys.exit(1)
+            
+        logger.info(f"✅ Geschichte generiert: '{chapter_title}' ({len(chapter_text)} Zeichen)")
+
+    except Exception as e:
+        logger.error(f"❌ Fehler bei der KI-Generierung: {e}")
+        sys.exit(1)
+
+    logger.info("")
+    logger.info("💾 Ergebnis speichern...")
     logger.info("-" * 40)
 
     output = {
-        "title": book_data["chapter_title"],
+        "title": chapter_title,
         "description": "",
         "solution": "",
-        "source": book_data["book_filename"],
-        "source_url": book_data["chapter_id"],
-        "full_text": book_data["text"],
+        "source": "KI-Generiert",
+        "source_url": f"ai_story_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        "full_text": chapter_text,
         "mode": "long",
         "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
     }
@@ -303,12 +337,11 @@ def run_from_long_books():
     logger.info("=" * 60)
     logger.info("📋 ERGEBNIS")
     logger.info("=" * 60)
-    logger.info(f"   Buch:        {output['source']}")
-    logger.info(f"   Kapitel:     {output['title']}")
+    logger.info(f"   Titel:       {output['title']}")
     logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
     logger.info(f"   Timestamp:   {output['timestamp']}")
     logger.info("=" * 60)
-    logger.info("🎉 Long-Form Kapitel erfolgreich ausgewählt!")
+    logger.info("🎉 KI Long-Form Geschichte erfolgreich generiert!")
     return output
 
 

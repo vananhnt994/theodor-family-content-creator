@@ -55,13 +55,13 @@ def main():
         if os.path.exists(out_path):
             logger.info(f"Cover existiert bereits ({out_path}). Überspringe Generierung...")
         else:
-            logger.info("🎨 Generiere Cover-Bild (9:16) via Vertex AI...")
+            logger.info("🎨 Generiere Cover-Bild (16:9) via Vertex AI...")
             try:
                 images = model.generate_images(
                     prompt=prompt,
                     number_of_images=1,
                     language="en",
-                    aspect_ratio="9:16",
+                    aspect_ratio="16:9",
                 )
                 if images:
                     images[0].save(location=out_path)

@@ -1,6 +1,6 @@
 # 🎬 Theodorbot: The Local Video Content Factory
 
-Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von 60-Sekunden-Kurzvideos (TikToks, YouTube Shorts). 
+Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (60s TikToks/Shorts) sowie Long-Form Videos (bis 12min Gute-Nacht-Geschichten). 
 Optimiert für Edge-Geräte mit begrenztem Arbeitsspeicher (z.B. 8 GB RAM), da alle Services strikt nacheinander ausgeführt werden.
 
 ## 🚀 Schnellstart
@@ -11,6 +11,9 @@ python run_pipeline.py --channel betheo
 
 # Eigener Artikel-Modus (kein Scraping, eigener Text)
 python run_pipeline.py --channel betheo --artikel
+
+# Long-Form Pipeline (Gute Nacht Geschichten, liest PDF)
+python run_long_pipeline.py --channel betheo
 
 # Upload-Pipeline (fertiges Video hochladen)
 python run_uploader.py --channel betheo
@@ -34,7 +37,7 @@ Der Text wird trotzdem durch Gemini aufbereitet (title/description/solution), ab
 
 ---
 
-## ⚙️ Detaillierte Service-Funktionen & Verbindungen
+## ⚙️ Detaillierte Service-Funktionen & Verbindungen (Short-Form Pipeline)
 
 Die Pipeline ist als strikte Kette (Daisy-Chain) aufgebaut. Kein Service greift auf die Ressourcen des anderen zu. Die Kommunikation erfolgt ausschließlich über den Austausch von JSON-Dateien.
 
@@ -125,6 +128,30 @@ Der finale Verteilungsschritt – veröffentlicht fertige Videos auf allen Platt
 
 ---
 
+## 📚 Detaillierte Service-Funktionen (Long-Form Pipeline)
+
+Neben der Short-Form-Pipeline existiert eine dedizierte Pipeline für längere Inhalte (bis zu 12 Minuten), die speziell für Vorlesegeschichten aus PDFs (z.B. Märchen) entwickelt wurde. Die Ausführung erfolgt über `run_long_pipeline.py`.
+
+### 📖 Service 0: Der Librarian (in trend_scout)
+Liest chronologisch Kapitel aus PDF-Büchern im Ordner `input/long/books/`. Merkt sich den Fortschritt, um beim nächsten Durchlauf das darauffolgende Kapitel zu lesen.
+
+### 🧹 Service 1: Der Text-Cleaner (in creator)
+Entfernt unerwünschte Artefakte (Seitenzahlen, Header, Inhaltsverzeichnisse) aus den rohen PDF-Texten und bereinigt den Lesefluss.
+
+### 🖋️ Service 2: Der Story-Kritiker (in art_director)
+Optimiert den Text mit LLM-Unterstützung für das Vorlesen. Generiert einen Prompt für ein einzelnes Cover-Bild und wählt dynamisch eine passende Sprecherstimme.
+
+### 🖼️ Service 3A: Cover-Bild (in image_generator)
+Generiert exakt **ein** statisches Cover-Bild im 16:9 (oder quadratischen) Format passend zum Kapitel via Google Vertex AI.
+
+### 🎙️ Service 3B: Ton-Meister (in audio_generator)
+Teilt den sehr langen Text in kleinere Chunks auf (Chunking), verlangsamt die Sprechgeschwindigkeit (für eine ruhige "Gute-Nacht"-Stimmung) und fügt die Audio-Schnipsel per ElevenLabs zusammen.
+
+### 🎬 Service 6: Video-Editor
+Ein völlig lokaler, auf FFmpeg basierender Service. Erzeugt das finale MP4-Video, indem das Cover-Bild mit einem sanften, extrem langsamen "Ken Burns" Zoom (Pan & Zoom) animiert und mit der Vorlese-Audiospur unterlegt wird.
+
+---
+
 ## 🛠️ Verwendeter Tech-Stack
 
 * **Python 3.10+**: Die Kern-Logik für alle Microservices.
@@ -134,6 +161,7 @@ Der finale Verteilungsschritt – veröffentlicht fertige Videos auf allen Platt
 * **ElevenLabs (Eleven v3)**: Natürliche Text-to-Speech Engine für vietnamesische Voiceovers (Service 3B).
 * **Google Drive API**: Cloud-Upload und Archivierung (Services 4, 5).
 * **Google OAuth 2.0**: Sichere Authentifizierung für Drive-Zugriff.
+* **FFmpeg**: Für lokales Video-Rendering und Ken Burns Effekte (Service 6).
 
 ---
 
@@ -250,8 +278,10 @@ theodor-family-content-creator/
 ├── audio_generator/        # Service 3B: Ton-Meister
 ├── archiver/               # Service 4: Archiver
 ├── uploader/               # Service 5: Uploader
+├── video_editor/           # Service 6: Video-Editor (FFmpeg)
 ├── output/                 # Generierte Dateien (temporär)
-├── run_pipeline.py         # Haupt-Pipeline (Service 0-4)
+├── run_pipeline.py         # Haupt-Pipeline (Short-Form)
+├── run_long_pipeline.py    # Long-Form Pipeline (Gute Nacht Geschichten)
 ├── run_uploader.py         # Upload-Pipeline (Service 5)
 ├── channel_config.py       # Channel-Config Loader
 └── .env                    # API Keys (nicht im Git!)

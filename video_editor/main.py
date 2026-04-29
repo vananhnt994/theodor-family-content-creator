@@ -9,6 +9,16 @@ import logging
 import os
 import subprocess
 import sys
+import winreg
+
+# Ensure newly installed programs (like FFmpeg via winget) are immediately available
+# without requiring the user to restart VS Code or the terminal.
+try:
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
+        user_path = winreg.QueryValueEx(key, "PATH")[0]
+    os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + user_path
+except Exception:
+    pass
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("VideoEditor")
@@ -19,9 +29,9 @@ COVER_IMAGE = "output/Cover.jpg"
 AUDIO_FILE = "output/Voiceover_Finale.mp3"
 OUTPUT_VIDEO = "output/Final_Video.mp4"
 
-# Output video resolution (9:16 portrait for Shorts / vertical long-form)
-VIDEO_WIDTH = 1080
-VIDEO_HEIGHT = 1920
+# Output video resolution (16:9 landscape for Long-Form Youtube)
+VIDEO_WIDTH = 1920
+VIDEO_HEIGHT = 1080
 VIDEO_FPS = 30
 
 
