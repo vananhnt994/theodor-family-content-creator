@@ -66,7 +66,7 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
-def _call_llm(prompt: str, temperature: float = 0.7) -> str:
+def _call_llm(prompt: str, temperature: float = 0.7, use_system_prompt: bool = True, model_override: str = None) -> str:
     """Call Gemini with the editorial system prompt baked in."""
     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
     load_dotenv()
@@ -85,15 +85,18 @@ def _call_llm(prompt: str, temperature: float = 0.7) -> str:
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
     
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
-        system_instruction=SYSTEM_PROMPT,
-        safety_settings=safety_settings,
-        generation_config=genai.GenerationConfig(
+    model_kwargs = {
+        "model_name": model_override or GEMINI_MODEL,
+        "safety_settings": safety_settings,
+        "generation_config": genai.GenerationConfig(
             response_mime_type="application/json",
             temperature=temperature
         )
-    )
+    }
+    if use_system_prompt:
+        model_kwargs["system_instruction"] = SYSTEM_PROMPT
+
+    model = genai.GenerativeModel(**model_kwargs)
     response = model.generate_content(prompt)
     if not response.candidates:
         logger.warning(f"[Creator] ⚠ Gemini Content Filter blockiert: {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
@@ -125,7 +128,7 @@ def generate_voiceover(thema: dict) -> dict | None:
             if attempt > 1:
                 logger.info(f"[Creator] 🔄 Versuch {attempt}/{MAX_RETRIES + 1}...")
 
-            response_text = _call_llm(prompt, temperature=0.75)
+            response_text = _call_llm(prompt, temperature=0.75, use_system_prompt=True)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
 
             result = _extract_json(response_text)
@@ -183,12 +186,18 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
     for attempt in range(1, MAX_RETRIES + 2):
         try:
             current_prompt = prompt
+            use_sys = True
+            mod_override = None
             if attempt > 1:
                 logger.info(f"[Creator] 🔄 Versuch {attempt}/{MAX_RETRIES + 1} (Safe-Mode)...")
                 # Fallback: Entschärfter Prompt für Gemini Filter
-                current_prompt += "\n\nCRITICAL SAFETY INSTRUCTION: The generated image prompts MUST be extremely safe, positive, and non-violent. Do not describe children in distress, danger, or any negative situations. Use abstract, peaceful, or purely positive imagery (e.g. 'a peaceful garden', 'a warm glowing light', 'a calm family scene') even if the voiceover text discusses a serious or painful problem. Ignore the negative aspects of the voiceover when creating the image prompts."
+                current_prompt += "\n\nCRITICAL SAFETY INSTRUCTION: The generated image prompts MUST be extremely safe, positive, and non-violent. Do not describe children in distress, danger, or any negative situations. Use abstract, peaceful, or purely positive imagery (e.g. 'a peaceful garden', 'a warm glowing light', 'a calm family scene') even if the voiceover text discusses a serious or painful problem. Ignore the negative aspects of the voiceover when creating the image prompts. Focus ONLY on the positive resolution."
+            if attempt == 3:
+                # Remove system prompt to see if that was triggering the filter, and use a stronger model
+                use_sys = False
+                mod_override = "gemini-2.5-flash"
 
-            response_text = _call_llm(current_prompt, temperature=0.5)
+            response_text = _call_llm(current_prompt, temperature=0.5, use_system_prompt=use_sys, model_override=mod_override)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
 
             result = _extract_json(response_text)

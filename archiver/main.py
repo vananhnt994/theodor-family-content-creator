@@ -172,10 +172,12 @@ def main():
         logger.warning("⚠ Archiv-Ordner fehlt in Config. Nutze Fallback...")
 
     try:
+        upload_success = False
         if folder_id:
             logger.info(f"☁️  Lade Archiv zu Google Drive hoch (Modus: {mode.upper()})...")
             file_res = upload_to_drive(zip_path, zip_name, folder_id, mimetype="application/zip")
             logger.info(f"✓ Zip Upload erfolgreich! Link: {file_res.get('webViewLink')}")
+            upload_success = True
         else:
             logger.warning("⚠ Kein Drive-Ordner konfiguriert – Überspringe Upload.")
 
@@ -187,9 +189,14 @@ def main():
                 logger.warning("⚠ SEOs-Ordner fehlt in Config!")
 
         # 4. Ordner aufräumen
-        cleanup_output_dir()
+        if upload_success:
+            cleanup_output_dir()
+        else:
+            logger.info("ℹ️  Da kein Upload stattfand, behalte ich die Dateien lokal im 'output' Ordner.")
+            
     except Exception as e:
         logger.error(f"✗ Fehler beim Google Drive Upload: {e}")
+        logger.info("ℹ️  Die Dateien bleiben lokal im 'output' Ordner erhalten.")
         sys.exit(1)
 
 if __name__ == "__main__":

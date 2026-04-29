@@ -1,0 +1,39 @@
+# Long-Form Pipeline Tasks
+
+## Phase 1: Verzeichnisstruktur & Migration
+- [x] `input/shorts/` erstellen, `artikel.txt` + `books/` verschieben
+- [x] `input/long/books/` erstellen
+- [x] `output/historie.json` → `output/historie_shorts.json` umbenennen
+
+## Phase 2: Service 0 – Trend Scout
+- [x] `trend_scout/config.py` – getrennte History-Dateinamen, Shorts-Books-Pfad
+- [x] `trend_scout/book_reader.py` – konfigurierbarer `books_dir`, sequenzielles Lesen für Long
+- [x] `trend_scout/main.py` – `run_from_long_books()` + History-Trennung
+
+## Phase 3: Service 1 – Creator (Text-Cleaner)
+- [x] `creator/script_writer.py` – neue `clean_book_text()` Funktion
+- [x] `creator/main.py` – Long-Form Modus erkennen und routen
+
+## Phase 4: Service 2 – Art Director (Story-Kritiker)
+- [x] `art_director/config.py` – `LONG_FORM_STORY_CRITIC_PROMPT`
+- [x] `art_director/main.py` – Story-Kritiker + 1-Bild + Stimmen-Rotation
+
+## Phase 5: Service 3A – Image Generator
+- [x] `image_generator/main.py` – Cover-Bild Modus
+
+## Phase 6: Service 3B – Audio Generator (Chunking)
+- [x] `audio_generator/main.py` – Chunking + ruhige Voice Settings
+
+## Phase 7: Service 6 – Video Editor (NEU)
+- [x] `video_editor/__init__.py`
+- [x] `video_editor/__main__.py`
+- [x] `video_editor/main.py` – FFmpeg Ken Burns Zoom
+
+## Phase 8: Pipeline-Orchestrator
+- [x] `run_long_pipeline.py` – separates Skript erstellen
+
+## Phase 9: Archiver
+- [x] `archiver/main.py` – `.mp4` in ZIP einschließen
+
+## Phase 10: run_pipeline.py anpassen (Shorts-Pfade)
+- [x] `run_pipeline.py` – `input/shorts/` Pfad-Korrekturen

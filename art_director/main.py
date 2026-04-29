@@ -71,11 +71,18 @@ def _run_long_form(data: dict, env_path: str):
             system_instruction=LONG_FORM_STORY_CRITIC_PROMPT,
             generation_config=genai.GenerationConfig(temperature=0.4),
         )
-        # Truncate if very long (Gemini context limit safety)
-        text_for_llm = cleaned_text[:20000] if len(cleaned_text) > 20000 else cleaned_text
-        response = model.generate_content(
-            f"Optimize this Vietnamese book chapter for read-aloud:\n\n{text_for_llm}"
-        )
+        # Give more context so it can summarize the ending properly
+        text_for_llm = cleaned_text[:30000] if len(cleaned_text) > 30000 else cleaned_text
+        
+        prompt = f"""Optimize this Vietnamese book chapter for a bedtime read-aloud.
+CRITICAL INSTRUCTION: The final audio MUST NOT exceed 25 minutes (which is roughly 3000 words or 15000 characters). 
+If the provided text is too long, you MUST skillfully condense or summarize parts of the story. 
+However, you MUST ensure the story remains engaging and has a PROPER, SATISFYING ENDING. Do not let the story cut off abruptly!
+
+Text:
+{text_for_llm}"""
+        
+        response = model.generate_content(prompt)
         if response.candidates:
             optimized_text = response.text.strip()
             logger.info(f"✓ Text optimiert ({len(optimized_text)} Zeichen).")
@@ -108,9 +115,9 @@ Rules: No text in the image. Under 60 words. Return ONLY the prompt text, nothin
         logger.warning(f"⚠ Cover-Prompt Fehler: {e}. Nutze Fallback.")
         bild_prompt = "A cozy dreamy anime illustration of a child reading a book under warm lamplight, Studio Ghibli style, soft pastel colors."
 
-    # Step 3: Rotate voice selection
-    selected_voice = _rotate_voice(channel_cfg)
-    logger.info(f"🎙️  Gewählte Stimme (rotiert): {selected_voice}")
+    # Step 3: Always use 'Frau' for long form (user request)
+    selected_voice = "Frau"
+    logger.info(f"🎙️  Gewählte Stimme (Fixiert): {selected_voice}")
 
     return optimized_text, bild_prompt, selected_voice
 
