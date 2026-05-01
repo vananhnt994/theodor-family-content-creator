@@ -279,18 +279,34 @@ def run_from_long_books():
     try:
         client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
         
-        prompt = """Bạn là một nhà văn thiếu nhi xuất sắc. Hãy sáng tác một câu chuyện cổ tích / chuyện kể trước khi đi ngủ hoàn toàn mới bằng tiếng Việt.
+        import random
+        animal_pool = random.sample([
+            "con sư tử", "con voi", "con cáo", "con gấu", "con thỏ", "con rùa",
+            "con chim đại bàng", "con cá heo", "con hươu cao cổ", "con ngựa vằn",
+            "con bướm", "con ếch", "con hạc", "con chim công", "con mèo rừng",
+            "con lợn rừng", "con gấu trúc", "con hổ", "con chim hải âu",
+            "con rồng nhỏ", "con nhện", "con ong mật", "con rắn hiền lành",
+            "con cừu", "con ngựa", "con bò rừng", "con cú mèo", "con chim sẻ",
+            "con cá vàng", "con hải ly", "con tắc kè hoa", "con chim vẹt",
+            "con sóc đất", "con gà trống", "con vịt trời", "con gấu bắc cực",
+            "con khỉ", "con chim sếu", "con nhím", "con sói"
+        ], k=3)
+        animal_choice = animal_pool[0]
+
+        prompt = f"""Bạn là một nhà văn thiếu nhi xuất sắc. Hãy sáng tác một câu chuyện cổ tích / chuyện kể trước khi đi ngủ hoàn toàn mới bằng tiếng Việt.
 YÊU CẦU QUAN TRỌNG:
 1. Câu chuyện phải RẤT DÀI và CHI TIẾT (khoảng 2000 đến 3500 từ), đủ để đọc to trong khoảng 10 đến 25 phút. Đừng tóm tắt, hãy kể thật chi tiết từng hành động, lời thoại.
 2. Mỗi câu chuyện PHẢI TRUYỀN TẢI RÕ RÀNG 1 BÀI HỌC VỀ PHẨM CHẤT TỐT ĐẸP (ví dụ: lòng dũng cảm, sự trung thực, lòng nhân ái, sự kiên nhẫn, lòng biết ơn, v.v.) một cách rất rõ ràng và dễ hiểu cho trẻ em.
 3. Nội dung ấm áp, giàu trí tưởng tượng, phù hợp cho trẻ em nghe trước khi ngủ.
-4. Không copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới.
-5. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
-{
+4. NHÂN VẬT CHÍNH phải là: **{animal_choice}** — hãy xây dựng tính cách và ngoại hình thật sinh động, khác biệt.
+5. TUYỆT ĐỐI KHÔNG dùng con sóc (sóc) làm nhân vật trong câu chuyện này.
+6. Không copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới.
+7. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
+{{
   "title": "Tên câu chuyện",
   "story": "Nội dung chi tiết của câu chuyện..."
-}"""
-        config = types.GenerateContentConfig(temperature=0.7)
+}}"""
+        config = types.GenerateContentConfig(temperature=0.9)  # High temp for creative variety
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
