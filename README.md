@@ -1,6 +1,6 @@
 # 🎬 Theodorbot: The Local Video Content Factory
 
-Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (60s TikToks/Shorts) sowie Long-Form Videos (bis 12min Gute-Nacht-Geschichten). 
+Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (60s TikToks/Shorts) sowie Long-Form Audios (bis 12min Gute-Nacht-Geschichten). 
 Optimiert für Edge-Geräte mit begrenztem Arbeitsspeicher (z.B. 8 GB RAM), da alle Services strikt nacheinander ausgeführt werden.
 
 ## 🚀 Schnellstart
@@ -139,16 +139,12 @@ Liest chronologisch Kapitel aus PDF-Büchern im Ordner `input/long/books/`. Merk
 Entfernt unerwünschte Artefakte (Seitenzahlen, Header, Inhaltsverzeichnisse) aus den rohen PDF-Texten und bereinigt den Lesefluss.
 
 ### 🖋️ Service 2: Der Story-Kritiker (in art_director)
-Optimiert den Text mit LLM-Unterstützung für das Vorlesen. Generiert einen Prompt für ein einzelnes Cover-Bild und wählt dynamisch eine passende Sprecherstimme.
-
-### 🖼️ Service 3A: Cover-Bild (in image_generator)
-Generiert exakt **ein** statisches Cover-Bild im 16:9 (oder quadratischen) Format passend zum Kapitel via Google Vertex AI.
+Optimiert den Text mit LLM-Unterstützung für das Vorlesen. Wählt dynamisch eine passende Sprecherstimme.
 
 ### 🎙️ Service 3B: Ton-Meister (in audio_generator)
 Teilt den sehr langen Text in kleinere Chunks auf (Chunking), verlangsamt die Sprechgeschwindigkeit (für eine ruhige "Gute-Nacht"-Stimmung) und fügt die Audio-Schnipsel per ElevenLabs zusammen.
 
-### 🎬 Service 6: Video-Editor
-Ein völlig lokaler, auf FFmpeg basierender Service. Erzeugt das finale MP4-Video, indem das Cover-Bild mit einem sanften, extrem langsamen "Ken Burns" Zoom (Pan & Zoom) animiert und mit der Vorlese-Audiospur unterlegt wird.
+*(Hinweis: Für Long-Form werden keine Cover-Bilder oder Videos generiert. Das finale Produkt ist eine Audiodatei sowie der zugehörige Text, ideal für Podcasts oder Hörspiele).*
 
 ---
 
@@ -161,7 +157,7 @@ Ein völlig lokaler, auf FFmpeg basierender Service. Erzeugt das finale MP4-Vide
 * **ElevenLabs (Eleven v3)**: Natürliche Text-to-Speech Engine für vietnamesische Voiceovers (Service 3B).
 * **Google Drive API**: Cloud-Upload und Archivierung (Services 4, 5).
 * **Google OAuth 2.0**: Sichere Authentifizierung für Drive-Zugriff.
-* **FFmpeg**: Für lokales Video-Rendering und Ken Burns Effekte (Service 6).
+* **FFmpeg**: Für lokales Video-Rendering und Ken Burns Effekte (Service 6 - aktuell deaktiviert).
 
 ---
 

@@ -2,8 +2,10 @@ import os
 import json
 import logging
 import sys
-import vertexai
-from vertexai.preview.vision_models import ImageGenerationModel
+from google import genai
+from google.genai import types
+from PIL import Image
+import io
 from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -26,8 +28,7 @@ def main():
     location = os.environ.get("GOOGLE_LOCATION", "us-central1")
     
     try:
-        vertexai.init(project=project, location=location)
-        model = ImageGenerationModel.from_pretrained("imagen-4.0-fast-generate-001") # Verwende Imagen 4 Flash wie vom Nutzer gewünscht
+        client = genai.Client(vertexai=True, project=project, location=location)
     except Exception as e:
         logger.error(f"✗ Vertex AI Setup gescheitert. Bitte prüfe deine GOOGLE_APPLICATION_CREDENTIALS: {e}")
         sys.exit(1)
@@ -57,14 +58,18 @@ def main():
         else:
             logger.info("🎨 Generiere Cover-Bild (16:9) via Vertex AI...")
             try:
-                images = model.generate_images(
+                result = client.models.generate_images(
+                    model='imagen-4.0-fast-generate-001',
                     prompt=prompt,
-                    number_of_images=1,
-                    language="en",
-                    aspect_ratio="16:9",
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                        aspect_ratio="16:9"
+                    )
                 )
-                if images:
-                    images[0].save(location=out_path)
+                if result.generated_images:
+                    image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
+                    image.save(out_path)
                     logger.info(f"✓ Cover gespeichert: {out_path}")
                 else:
                     logger.error("✗ Kein Bild erhalten.")
@@ -91,14 +96,18 @@ def main():
             
         logger.info(f"🎨 Generiere Bild für Szene {sn} (9:16) via Vertex AI...")
         try:
-            images = model.generate_images(
+            result = client.models.generate_images(
+                model='imagen-4.0-fast-generate-001',
                 prompt=prompt,
-                number_of_images=1,
-                language="en",
-                aspect_ratio="9:16",
+                config=types.GenerateImagesConfig(
+                    number_of_images=1,
+                    output_mime_type="image/jpeg",
+                    aspect_ratio="9:16"
+                )
             )
-            if images:
-                images[0].save(location=out_path)
+            if result.generated_images:
+                image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
+                image.save(out_path)
                 logger.info(f"✓ Bild gespeichert: {out_path}")
             else:
                 logger.error(f"✗ Kein Bild für Szene {sn} erhalten.")

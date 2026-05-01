@@ -108,9 +108,7 @@ def main():
     services = [
         ("Service 1: Text-Cleaner",   "creator"),
         ("Service 2: Story-Kritiker", "art_director"),
-        ("Service 3A: Cover-Bild",    "image_generator"),
         ("Service 3B: Ton-Meister",   "audio_generator"),
-        ("Service 6: Video-Editor",   "video_editor"),
         ("Service 4: Archiver",       "archiver"),
     ]
 
@@ -118,7 +116,7 @@ def main():
         run_service(name, module)
 
     logger.info("🎉 Long-Form Pipeline erfolgreich abgeschlossen!")
-    logger.info("Das Video sollte jetzt auf Google Drive verfügbar sein.")
+    logger.info("Die Dateien (Audio & Text) sollten jetzt auf Google Drive verfügbar sein.")
 
 
 if __name__ == "__main__":

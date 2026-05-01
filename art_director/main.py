@@ -48,14 +48,15 @@ def _rotate_voice(channel_cfg: dict) -> str:
 
 def _run_long_form(data: dict, env_path: str):
     """Handle the Long-Form Story-Critic pipeline."""
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     from art_director.config import LONG_FORM_STORY_CRITIC_PROMPT, GEMINI_MODEL
 
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from channel_config import load_channel_config
     channel_cfg = load_channel_config()
 
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
 
     cleaned_text = data.get("cleaned_text", "")
     video_title = data.get("video_title", "Unbekannt")
@@ -66,10 +67,9 @@ def _run_long_form(data: dict, env_path: str):
     # Step 1: Optimize text for read-aloud via Gemini
     logger.info("✍️  Gemini optimiert den Text für Kinder & Eltern...")
     try:
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
+        config = types.GenerateContentConfig(
             system_instruction=LONG_FORM_STORY_CRITIC_PROMPT,
-            generation_config=genai.GenerationConfig(temperature=0.4),
+            temperature=0.4
         )
         # Give more context so it can summarize the ending properly
         text_for_llm = cleaned_text[:30000] if len(cleaned_text) > 30000 else cleaned_text
@@ -82,7 +82,11 @@ However, you MUST ensure the story remains engaging and has a PROPER, SATISFYING
 Text:
 {text_for_llm}"""
         
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config
+        )
         if response.candidates:
             optimized_text = response.text.strip()
             logger.info(f"✓ Text optimiert ({len(optimized_text)} Zeichen).")
@@ -93,33 +97,11 @@ Text:
         logger.warning(f"⚠ Fehler beim Story-Kritiker: {e}. Nutze Originaltext.")
         optimized_text = cleaned_text
 
-    # Step 2: Generate single cover image prompt
-    logger.info("🎨 Generiere Cover-Bild-Prompt...")
-    try:
-        cover_model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            generation_config=genai.GenerationConfig(temperature=0.5),
-        )
-        cover_response = cover_model.generate_content(
-            f"""Create a single English image prompt for a children's book cover illustration.
-Book chapter title: "{video_title}"
-Style: flat 2D Japanese anime, Studio Ghibli, warm pastel colors, soft watercolor, cozy and dreamy atmosphere, suitable for a bedtime story cover.
-Rules: No text in the image. Under 60 words. Return ONLY the prompt text, nothing else."""
-        )
-        if cover_response.candidates:
-            bild_prompt = cover_response.text.strip()
-            logger.info(f"✓ Cover-Prompt: {bild_prompt[:80]}...")
-        else:
-            bild_prompt = f"A cozy dreamy anime illustration of a child reading a book under warm lamplight, Studio Ghibli style, soft pastel colors."
-    except Exception as e:
-        logger.warning(f"⚠ Cover-Prompt Fehler: {e}. Nutze Fallback.")
-        bild_prompt = "A cozy dreamy anime illustration of a child reading a book under warm lamplight, Studio Ghibli style, soft pastel colors."
-
     # Step 3: Always use 'Frau' for long form (user request)
     selected_voice = "Frau"
     logger.info(f"🎙️  Gewählte Stimme (Fixiert): {selected_voice}")
 
-    return optimized_text, bild_prompt, selected_voice
+    return optimized_text, selected_voice
 
 
 def main():
@@ -150,10 +132,9 @@ def main():
     if data.get("mode") == "long":
         logger.info("📖 Long-Form Modus: Story-Kritiker aktiv...")
 
-        optimized_text, bild_prompt, selected_voice = _run_long_form(data, env_path)
+        optimized_text, selected_voice = _run_long_form(data, env_path)
 
         data["optimized_text"] = optimized_text
-        data["cover_image"] = {"bild_prompt": bild_prompt}
         data["selected_voice"] = selected_voice
         data["art_director_checked_at"] = datetime.now().isoformat()
 

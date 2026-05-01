@@ -2,7 +2,8 @@ import json
 import logging
 import os
 import sys
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import re
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -101,7 +102,7 @@ def refine_prompts(scenes: list[dict]) -> tuple[list[dict], str] | tuple[None, N
     Falls back to local processing if Gemini content filter blocks the request.
     """
     
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
     
     available_voices = list(channel_cfg.get("voices", {"Mann": "", "Frau": ""}).keys())
     voices_str = ", ".join([f"'{v}'" for v in available_voices])
@@ -142,22 +143,24 @@ Gib nur gültiges JSON im folgenden Format zurück:
     
     try:
         safety_settings = [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+            types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+            types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+            types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
         ]
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
+        
+        config = types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             safety_settings=safety_settings,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
-                temperature=0.4
-            )
+            response_mime_type="application/json",
+            temperature=0.4
         )
         
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config
+        )
         
         # Check if response was blocked by content filter
         if not response.candidates:
