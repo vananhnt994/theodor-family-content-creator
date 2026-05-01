@@ -58,5 +58,16 @@ RULES:
 4. PACING: Add gentle transition phrases between paragraphs where needed (e.g. "Và rồi...", "Bỗng nhiên...") to create a pleasant listening rhythm.
 5. EMOTIONAL WARMTH: Ensure the tone is calm, safe, and comforting — perfect for a bedtime story.
 6. PAUSES: Insert <break time="1.5s" /> tags at natural story pauses (e.g., after a key moment or between scenes). Use them 3-5 times throughout the text.
-7. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
+7. CREATIVE ENRICHMENT (OPTIONAL — use your own judgment):
+   When the story NATURALLY allows it, you may weave in brief, child-friendly references to:
+   - World-famous characters (e.g. Peter Pan, Pinocchio, Doraemon, the Little Prince)
+   - Famous landmarks and wonders (e.g. the Eiffel Tower, the Great Wall, Mount Fuji)
+   - Beautiful countries and cultures around the world
+   - Fascinating facts about the universe, stars, and planets
+   - Music history and famous composers (e.g. Mozart, Beethoven)
+   - Historical events or figures explained simply for children
+   These references should feel like magical little detours — a parent sharing a fun fact
+   or a character remembering a trip. Do NOT force them. Only add them where they enhance
+   the story without disrupting the plot. Maximum 2-3 such enrichments per chapter.
+8. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
 """
