@@ -58,26 +58,42 @@ RULES:
 4. PACING: Add gentle transition phrases between paragraphs where needed (e.g. "Và rồi...", "Bỗng nhiên...") to create a pleasant listening rhythm.
 5. EMOTIONAL WARMTH: Ensure the tone is calm, safe, and comforting — perfect for a bedtime story.
 6. PAUSES: Insert <break time="1.5s" /> tags at natural story pauses (e.g., after a key moment or between scenes). Use them 3-5 times throughout the text.
-7. CREATIVE ENRICHMENT (OPTIONAL — use your own judgment):
-   When the story NATURALLY allows it, you may weave in brief, child-friendly references.
+7. CREATIVE ENRICHMENT (MANDATORY — minimum 2 per chapter):
+   You MUST actively search for natural moments in the story and insert at least 2, ideally 3,
+   child-friendly enrichments. These must feel organic — like a parent adding a fun fact while
+   reading, or a character daydreaming. Do NOT place them all at the end.
+
    IMPORTANT COPYRIGHT RULES — follow strictly:
 
    ✅ SAFE TO USE DIRECTLY (public domain / real world):
-   - Classic fairy tale archetypes: a glass slipper left behind like in Cinderella, a cottage in the woods like Hansel and Gretel, a magic lamp like in the tales of 1001 Nights, a wooden puppet who wanted to be real
-   - Real historical figures (long deceased): Leonardo da Vinci, Mozart, Beethoven, Copernicus, Marie Curie — describe their ACHIEVEMENTS, not fictional stories about them
-   - Real world landmarks: the Eiffel Tower, the Great Wall of China, Mount Fuji, the Sahara Desert, the Amazon rainforest, Niagara Falls — use as vivid comparisons or facts
-   - Universe & science facts: the moon, stars, Milky Way, planets — all free to reference
-   - Traditional folk heroes & mythology: Hercules, Odysseus, Mulan (the ancient legend, not any film), Ali Baba, the tales of 1001 Nights
+   - Classic fairy tale archetypes: a glass slipper like in Cinderella, a cottage like Hansel and Gretel,
+     a magic lamp from the tales of 1001 Nights, a wooden puppet who longed to be real
+   - Real historical figures (long deceased): Leonardo da Vinci, Mozart, Beethoven, Copernicus,
+     Marie Curie, Napoleon, Cleopatra — describe their ACHIEVEMENTS in simple terms for children
+   - Real world landmarks: the Eiffel Tower, the Great Wall of China, Mount Fuji, the Sahara Desert,
+     the Amazon rainforest, Niagara Falls — use as vivid comparisons or wonder-inducing facts
+   - Universe & science: the moon, stars, Milky Way, Saturn's rings, black holes — frame as wonder
+   - Traditional folk heroes & mythology: Hercules, Odysseus, Ali Baba, Mulan (ancient legend only),
+     the tales of 1001 Nights, Vietnamese folk heroes like Thánh Gióng or Sơn Tinh
 
    ⚠️ HANDLE WITH CARE — use "dreaming of" or "wishing" framing only:
-   - If a character imagines meeting a famous modern figure (e.g., Mickey Mouse, a space hero, a cartoon character), phrase it as a DREAM or WISH: "cậu bé mơ một ngày nào đó được gặp những nhân vật trong những bộ phim hoạt hình mà cậu yêu thích..." — NEVER name specific trademarked characters directly.
+   - If a character imagines meeting a famous modern cartoon figure, phrase it as a DREAM or WISH:
+     "cậu bé mơ một ngày nào đó được gặp những nhân vật trong những bộ phim hoạt hình yêu thích..."
+     — NEVER name specific trademarked characters directly.
 
    ❌ DO NOT NAME DIRECTLY (still under copyright/trademark):
    - Doraemon, Pikachu, Mickey Mouse, SpongeBob, or any Disney/anime-specific character names
-   - Book titles or character names from novels published after 1928
+   - Character names from books or films published after 1928
 
-   These references should feel like magical little detours — a parent sharing a fun fact
-   or a child daydreaming. Do NOT force them. Only add them where they enhance
-   the story without disrupting the plot. Maximum 2-3 such enrichments per chapter.
+   HOW TO ENRICH — example patterns (adapt freely to fit the story):
+   - A child looks at the night sky → "Bầu trời đêm nay nhiều sao quá, giống như hàng triệu triệu ngọn nến
+     lung linh — và ba nói rằng nếu con đếm hết các vì sao trong Dải Ngân Hà, con sẽ cần tới 100,000
+     năm mới xong đấy!"
+   - A character builds something → "Cô bé tưởng tượng mình là Leonardo da Vinci nhỏ tuổi, người đã
+     vẽ những chiếc máy bay và người máy từ 500 năm trước khi chúng được phát minh ra."
+   - A long journey → "Đó là một hành trình dài — dài hơn cả con đường từ Việt Nam đến tận chân tháp
+     Eiffel ở Paris, nơi mỗi đêm lấp lánh ánh đèn như một giấc mơ."
+   - Feeling brave → "Cậu hít một hơi thật sâu, dũng cảm như Hercules trong những câu chuyện cổ."
+
 8. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
 """
