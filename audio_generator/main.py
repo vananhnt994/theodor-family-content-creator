@@ -15,8 +15,9 @@ logger = logging.getLogger("AudioGenerator")
 INPUT_FILE = "output/finale_prompts.json"
 OUTPUT_DIR = "output"
 
-# ElevenLabs character limit per request (safe limit below API max)
-CHUNK_CHAR_LIMIT = 2400
+# ElevenLabs character limit per request (OP-7: raised from 2400 to 4500 → ~50% fewer API calls)
+# ElevenLabs allows up to 5000 chars per request; 4500 gives a safe margin.
+CHUNK_CHAR_LIMIT = 4500
 
 
 def _split_into_chunks(text: str, limit: int = CHUNK_CHAR_LIMIT) -> list[str]:
