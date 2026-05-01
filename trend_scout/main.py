@@ -264,7 +264,8 @@ def run_from_long_books():
     logger.info("📚 SERVICE 0: STORYTELLER-MODUS (Long-Form KI-Generierung)")
     logger.info("=" * 60)
 
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     from trend_scout.config import GEMINI_MODEL
 
     if not check_connection():
@@ -276,7 +277,7 @@ def run_from_long_books():
     logger.info("-" * 40)
 
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
         
         prompt = """Bạn là một nhà văn thiếu nhi xuất sắc. Hãy sáng tác một câu chuyện cổ tích / chuyện kể trước khi đi ngủ hoàn toàn mới bằng tiếng Việt.
 YÊU CẦU QUAN TRỌNG:
@@ -289,7 +290,12 @@ YÊU CẦU QUAN TRỌNG:
   "title": "Tên câu chuyện",
   "story": "Nội dung chi tiết của câu chuyện..."
 }"""
-        response = model.generate_content(prompt, generation_config=genai.GenerationConfig(temperature=0.7))
+        config = types.GenerateContentConfig(temperature=0.7)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config
+        )
         
         text_resp = response.text.strip()
         if text_resp.startswith("```json"):

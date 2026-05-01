@@ -11,7 +11,7 @@ import glob
 import random
 import logging
 import fitz  # PyMuPDF
-import google.generativeai as genai
+from google import genai
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,7 @@ def _is_actual_story(text: str) -> bool:
         load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
         load_dotenv()
         
-        genai.configure(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
-        model = genai.GenerativeModel(GEMINI_MODEL)
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
         
         sample = text[:2000]
         prompt = f"""You are a content classifier. Analyze the following Vietnamese text and determine if it is an ACTUAL NARRATIVE STORY (e.g., a fairy tale with characters, dialogue, and a plot).
@@ -50,7 +49,10 @@ First, briefly explain your reasoning. Then, on a new line at the very end, writ
 Text:
 {sample}"""
         
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt
+        )
         if response.candidates:
             answer = response.text.strip().upper()
             last_line = answer.split('\n')[-1]

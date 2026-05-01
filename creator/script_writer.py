@@ -9,7 +9,8 @@ import logging
 import re
 
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 from creator.config import (
@@ -76,28 +77,28 @@ def _call_llm(prompt: str, temperature: float = 0.7, use_system_prompt: bool = T
         logger.error("[Creator] ✗ GEMINI_API_KEY in .env fehlt!")
         raise ValueError("GEMINI_API_KEY fehlt")
         
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     
     safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+        types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+        types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+        types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
     ]
     
-    model_kwargs = {
-        "model_name": model_override or GEMINI_MODEL,
-        "safety_settings": safety_settings,
-        "generation_config": genai.GenerationConfig(
-            response_mime_type="application/json",
-            temperature=temperature
-        )
-    }
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        temperature=temperature,
+        safety_settings=safety_settings
+    )
     if use_system_prompt:
-        model_kwargs["system_instruction"] = SYSTEM_PROMPT
+        config.system_instruction = SYSTEM_PROMPT
 
-    model = genai.GenerativeModel(**model_kwargs)
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=model_override or GEMINI_MODEL,
+        contents=prompt,
+        config=config
+    )
     if not response.candidates:
         logger.warning(f"[Creator] ⚠ Gemini Content Filter blockiert: {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
         raise ValueError("PROHIBITED_CONTENT block")

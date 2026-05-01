@@ -9,7 +9,8 @@ import logging
 import re
 
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 from trend_scout.config import (
@@ -59,7 +60,7 @@ def check_connection() -> bool:
         logger.error("[Analyzer] ✗ GEMINI_API_KEY in .env fehlt!")
         return False
         
-    genai.configure(api_key=api_key)
+    
     logger.info(f"[Analyzer] ✓ Gemini API verbunden (Modell: {GEMINI_MODEL})")
     return True
 
@@ -93,21 +94,23 @@ def pick_topic(headlines: list[dict]) -> dict | None:
     import time
     for attempt in range(3):
         try:
+            client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
             safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
             ]
-            model = genai.GenerativeModel(
-                model_name=GEMINI_MODEL,
-                safety_settings=safety_settings,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.3
-                )
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.3,
+                safety_settings=safety_settings
             )
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
             if not response.candidates:
                 logger.warning(f"[Analyzer] ⚠ Gemini Content Filter blockiert (Auswahl): {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
                 return None
@@ -178,21 +181,23 @@ def generate_content(topic: dict, article_text: str) -> dict | None:
     import time
     for attempt in range(3):
         try:
+            client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
             safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
             ]
-            model = genai.GenerativeModel(
-                model_name=GEMINI_MODEL,
-                safety_settings=safety_settings,
-                generation_config=genai.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.7
-                )
+            config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.7,
+                safety_settings=safety_settings
             )
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=config
+            )
             if not response.candidates:
                 logger.warning(f"[Analyzer] ⚠ Gemini Content Filter blockiert (Content): {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
                 return None
