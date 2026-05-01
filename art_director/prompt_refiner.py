@@ -2,11 +2,11 @@ import json
 import logging
 import os
 import sys
-from google import genai
 from google.genai import types
 import re
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from shared.gemini_utils import SAFETY_SETTINGS_NONE, create_client, extract_json as _shared_extract_json
 from channel_config import load_channel_config
 from art_director.config import GEMINI_MODEL, SYSTEM_PROMPT
 
@@ -41,32 +41,8 @@ PHOTO_WORDS = ["35mm", "film grain", "photo", "realistic", "camera", "lens",
 
 
 def _extract_json(text: str) -> dict | None:
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1).strip())
-        except json.JSONDecodeError:
-            pass
-    
-    depth = 0
-    start = -1
-    for i, ch in enumerate(text):
-        if ch == '{':
-            if depth == 0: start = i
-            depth += 1
-        elif ch == '}':
-            depth -= 1
-            if depth == 0 and start >= 0:
-                try:
-                    return json.loads(text[start:i+1])
-                except json.JSONDecodeError:
-                    start = -1
-    return None
+    """Delegate to shared extract_json."""
+    return _shared_extract_json(text)
 
 
 def _local_fallback(scenes: list[dict]) -> tuple[list[dict], str]:
@@ -101,39 +77,40 @@ def refine_prompts(scenes: list[dict]) -> tuple[list[dict], str] | tuple[None, N
     Generates both image prompts (bild_prompt) and video prompts (video_prompt).
     Falls back to local processing if Gemini content filter blocks the request.
     """
-    
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
-    
+    client = create_client()
+
     available_voices = list(channel_cfg.get("voices", {"Mann": "", "Frau": ""}).keys())
     voices_str = ", ".join([f"'{v}'" for v in available_voices])
     default_voice = available_voices[0] if available_voices else "Unbekannt"
-    
-    # Only send draft_prompt and emotion to Gemini – voiceover_text can trigger content filters
-    scenes_json = json.dumps([{"scene_number": s["scene_number"], "emotion": s.get("emotion", ""), "draft_prompt": s.get("draft_prompt", "")} for s in scenes], indent=2)
 
-    prompt = f"""Hier sind die Bild-Entwürfe und Emotionen für die einzelnen Szenen:
+    # Only send draft_prompt and emotion to Gemini – voiceover_text can trigger content filters
+    scenes_json = json.dumps(
+        [{"scene_number": s["scene_number"], "emotion": s.get("emotion", ""), "draft_prompt": s.get("draft_prompt", "")}
+         for s in scenes],
+        indent=2
+    )
+
+    # OP-6: Shortened prompt — Ghibli/character rules already live in SYSTEM_PROMPT
+    prompt = f"""Szenen-Entwürfe:
 
 ```json
 {scenes_json}
 ```
 
-AUFGABE: 
-1. Überarbeite jeden `draft_prompt` in einen neuen `final_prompt` (für Bildgenerierung), unter strikter Einhaltung deiner System-Prompt-Regeln.
-WICHTIG FÜR KONSISTENZ: Identifiziere die Charaktere und sorge dafür, dass IHRE VOLLE BESCHREIBUNG (Rolle, Alter, Kleidung, Aussehen) in JEDEM finalen Prompt wiederholt wird! VERWENDE KEINE NAMEN (wie "Mai"). Ein Prompt für ein Detail (wie ein Knopf) muss z.B. lauten: "The button on the pink dress of a 5-year-old girl with short black hair".
+AUFGABE:
+1. Überarbeite jeden `draft_prompt` zu einem `final_prompt` (Bildgenerierung) gemäß deinen System-Prompt-Regeln.
+2. Erstelle für jede Szene einen `video_prompt` — sanfte Kamerabewegung, max. 20 Wörter, entspannt und friedlich.
+3. Wähle die passende Stimme. Erlaubte Werte: {voices_str}.
 
-2. Erstelle für jede Szene zusätzlich einen `video_prompt` – eine kurze Beschreibung einer sanften, ruhigen Animation/Kamerabewegung für diese Szene. Maximal 20 Wörter. Alles muss entspannt und friedlich wirken.
-
-3. Analysiere die Emotionen und Szenen-Beschreibungen. Entscheide, welche Stimme für das Voiceover geeignet ist. Du DARFST NUR EINE DIESER STIMMEN WÄHLEN: {voices_str}.
-
-Gib nur gültiges JSON im folgenden Format zurück:
+Nur gültiges JSON zurückgeben:
 
 {{
-  "selected_voice": "{default_voice}", 
+  "selected_voice": "{default_voice}",
   "refined_scenes": [
     {{
       "scene_number": 1,
-      "final_prompt": "<DEIN ÜBERARBEITETER BILD-PROMPT IN ENGLISCH>",
-      "video_prompt": "<KURZE BESCHREIBUNG EINER SANFTEN ANIMATION/KAMERABEWEGUNG IN ENGLISCH, max 20 Wörter>"
+      "final_prompt": "<BILD-PROMPT IN ENGLISCH>",
+      "video_prompt": "<ANIMATION/KAMERA IN ENGLISCH, max 20 Wörter>"
     }}
   ]
 }}
@@ -142,16 +119,9 @@ Gib nur gültiges JSON im folgenden Format zurück:
     logger.info(f"[Art Director] 🎨 Verfeinere {len(scenes)} Prompts mit {GEMINI_MODEL}...")
     
     try:
-        safety_settings = [
-            types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
-            types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
-            types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
-            types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
-        ]
-        
         config = types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
-            safety_settings=safety_settings,
+            safety_settings=SAFETY_SETTINGS_NONE,
             response_mime_type="application/json",
             temperature=0.4
         )

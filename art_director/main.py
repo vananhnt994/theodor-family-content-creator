@@ -4,6 +4,9 @@ import os
 import sys
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from shared.gemini_utils import SAFETY_SETTINGS_NONE, create_client
+from google.genai import types
 from art_director.config import INPUT_DIR, INPUT_FILENAME, OUTPUT_DIR, OUTPUT_FILENAME
 from art_director.prompt_refiner import refine_prompts
 from dotenv import load_dotenv
@@ -48,15 +51,10 @@ def _rotate_voice(channel_cfg: dict) -> str:
 
 def _run_long_form(data: dict, env_path: str):
     """Handle the Long-Form Story-Critic pipeline."""
-    from google import genai
     from google.genai import types
     from art_director.config import LONG_FORM_STORY_CRITIC_PROMPT, GEMINI_MODEL
 
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from channel_config import load_channel_config
-    channel_cfg = load_channel_config()
-
-    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
+    client = create_client()
 
     cleaned_text = data.get("cleaned_text", "")
     video_title = data.get("video_title", "Unbekannt")
@@ -69,10 +67,11 @@ def _run_long_form(data: dict, env_path: str):
     try:
         config = types.GenerateContentConfig(
             system_instruction=LONG_FORM_STORY_CRITIC_PROMPT,
-            temperature=0.4
+            temperature=0.4,
+            max_output_tokens=8192,  # OP-4: cap output to ~15k chars (25 min audio)
         )
-        # Give more context so it can summarize the ending properly
-        text_for_llm = cleaned_text[:30000] if len(cleaned_text) > 30000 else cleaned_text
+        # OP-4: Reduced from 30000 to 20000 chars — prompt already asks to condense if too long
+        text_for_llm = cleaned_text[:20000] if len(cleaned_text) > 20000 else cleaned_text
         
         prompt = f"""Optimize this Vietnamese book chapter for a bedtime read-aloud.
 CRITICAL INSTRUCTION: The final audio MUST NOT exceed 25 minutes (which is roughly 3000 words or 15000 characters). 

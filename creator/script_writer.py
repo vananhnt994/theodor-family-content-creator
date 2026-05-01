@@ -4,12 +4,14 @@ Step 1: Generate a warm, professional voiceover script based on the topic mood.
 Step 2: Split into timed scenes with image prompts.
 """
 
-import json
 import logging
-import re
-
 import os
-from google import genai
+import sys
+
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from shared.gemini_utils import SAFETY_SETTINGS_NONE, create_client, extract_json
 from google.genai import types
 from dotenv import load_dotenv
 
@@ -26,70 +28,28 @@ from creator.config import (
 
 logger = logging.getLogger(__name__)
 
-# Maximum retries when LLM doesn't produce valid JSON
-MAX_RETRIES = 2
+# Module-level singleton — created once on first use
+_client = None
 
 
-def _extract_json(text: str) -> dict | None:
-    """Extract JSON object from LLM response, handling markdown code blocks."""
-    text = text.strip()
-
-    # Try direct parse
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    # Try markdown code block ```json ... ```
-    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1).strip())
-        except json.JSONDecodeError:
-            pass
-
-    # Try finding first { ... } block (including nested)
-    depth = 0
-    start = -1
-    for i, ch in enumerate(text):
-        if ch == '{':
-            if depth == 0:
-                start = i
-            depth += 1
-        elif ch == '}':
-            depth -= 1
-            if depth == 0 and start >= 0:
-                try:
-                    return json.loads(text[start:i+1])
-                except json.JSONDecodeError:
-                    start = -1
-
-    return None
+def _get_client():
+    """Return the module-level Gemini client, creating it if necessary."""
+    global _client
+    if _client is None:
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+        load_dotenv()
+        _client = create_client()
+    return _client
 
 
 def _call_llm(prompt: str, temperature: float = 0.7, use_system_prompt: bool = True, model_override: str = None) -> str:
     """Call Gemini with the editorial system prompt baked in."""
-    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-    load_dotenv()
-    
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        logger.error("[Creator] ✗ GEMINI_API_KEY in .env fehlt!")
-        raise ValueError("GEMINI_API_KEY fehlt")
-        
-    client = genai.Client(api_key=api_key)
-    
-    safety_settings = [
-        types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
-        types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
-        types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
-        types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
-    ]
-    
+    client = _get_client()
+
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
         temperature=temperature,
-        safety_settings=safety_settings
+        safety_settings=SAFETY_SETTINGS_NONE,
     )
     if use_system_prompt:
         config.system_instruction = SYSTEM_PROMPT
@@ -103,6 +63,9 @@ def _call_llm(prompt: str, temperature: float = 0.7, use_system_prompt: bool = T
         logger.warning(f"[Creator] ⚠ Gemini Content Filter blockiert: {getattr(response, 'prompt_feedback', 'Kein Feedback')}")
         raise ValueError("PROHIBITED_CONTENT block")
     return response.text.strip()
+
+# Maximum retries when LLM doesn't produce valid JSON
+MAX_RETRIES = 2
 
 
 def generate_voiceover(thema: dict) -> dict | None:
@@ -132,7 +95,7 @@ def generate_voiceover(thema: dict) -> dict | None:
             response_text = _call_llm(prompt, temperature=0.75, use_system_prompt=True)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
 
-            result = _extract_json(response_text)
+            result = extract_json(response_text)
             if not result:
                 logger.warning(
                     f"[Creator] ⚠ JSON-Parse fehlgeschlagen (Versuch {attempt}): "
@@ -201,7 +164,7 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
             response_text = _call_llm(current_prompt, temperature=0.5, use_system_prompt=use_sys, model_override=mod_override)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
 
-            result = _extract_json(response_text)
+            result = extract_json(response_text)
             if not result or "scenes" not in result:
                 logger.warning(
                     f"[Creator] ⚠ JSON-Parse fehlgeschlagen (Versuch {attempt}): "
