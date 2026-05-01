@@ -59,15 +59,25 @@ RULES:
 5. EMOTIONAL WARMTH: Ensure the tone is calm, safe, and comforting — perfect for a bedtime story.
 6. PAUSES: Insert <break time="1.5s" /> tags at natural story pauses (e.g., after a key moment or between scenes). Use them 3-5 times throughout the text.
 7. CREATIVE ENRICHMENT (OPTIONAL — use your own judgment):
-   When the story NATURALLY allows it, you may weave in brief, child-friendly references to:
-   - World-famous characters (e.g. Peter Pan, Pinocchio, Doraemon, the Little Prince)
-   - Famous landmarks and wonders (e.g. the Eiffel Tower, the Great Wall, Mount Fuji)
-   - Beautiful countries and cultures around the world
-   - Fascinating facts about the universe, stars, and planets
-   - Music history and famous composers (e.g. Mozart, Beethoven)
-   - Historical events or figures explained simply for children
+   When the story NATURALLY allows it, you may weave in brief, child-friendly references.
+   IMPORTANT COPYRIGHT RULES — follow strictly:
+
+   ✅ SAFE TO USE DIRECTLY (public domain / real world):
+   - Classic fairy tale archetypes: a glass slipper left behind like in Cinderella, a cottage in the woods like Hansel and Gretel, a magic lamp like in the tales of 1001 Nights, a wooden puppet who wanted to be real
+   - Real historical figures (long deceased): Leonardo da Vinci, Mozart, Beethoven, Copernicus, Marie Curie — describe their ACHIEVEMENTS, not fictional stories about them
+   - Real world landmarks: the Eiffel Tower, the Great Wall of China, Mount Fuji, the Sahara Desert, the Amazon rainforest, Niagara Falls — use as vivid comparisons or facts
+   - Universe & science facts: the moon, stars, Milky Way, planets — all free to reference
+   - Traditional folk heroes & mythology: Hercules, Odysseus, Mulan (the ancient legend, not any film), Ali Baba, the tales of 1001 Nights
+
+   ⚠️ HANDLE WITH CARE — use "dreaming of" or "wishing" framing only:
+   - If a character imagines meeting a famous modern figure (e.g., Mickey Mouse, a space hero, a cartoon character), phrase it as a DREAM or WISH: "cậu bé mơ một ngày nào đó được gặp những nhân vật trong những bộ phim hoạt hình mà cậu yêu thích..." — NEVER name specific trademarked characters directly.
+
+   ❌ DO NOT NAME DIRECTLY (still under copyright/trademark):
+   - Doraemon, Pikachu, Mickey Mouse, SpongeBob, or any Disney/anime-specific character names
+   - Book titles or character names from novels published after 1928
+
    These references should feel like magical little detours — a parent sharing a fun fact
-   or a character remembering a trip. Do NOT force them. Only add them where they enhance
+   or a child daydreaming. Do NOT force them. Only add them where they enhance
    the story without disrupting the plot. Maximum 2-3 such enrichments per chapter.
 8. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
 """
