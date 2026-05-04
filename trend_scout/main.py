@@ -300,8 +300,14 @@ YÊU CẦU QUAN TRỌNG:
 3. Nội dung ấm áp, giàu trí tưởng tượng, phù hợp cho trẻ em nghe trước khi ngủ.
 4. NHÂN VẬT CHÍNH phải là: **{animal_choice}** — hãy xây dựng tính cách và ngoại hình thật sinh động, khác biệt.
 5. TUYỆT ĐỐI KHÔNG dùng con sóc (sóc) làm nhân vật trong câu chuyện này.
-6. Không copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới.
-7. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
+6. KHÔNG copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới hoàn toàn.
+7. LÀM GIÀU SÁNG TẠO (BẮT BUỘC): Trong câu chuyện, hãy đan xen ít nhất 2-3 yếu tố thực tế sau đây một cách tự nhiên để tăng tính giáo dục và hấp dẫn:
+   - 🧚 Nhân vật nổi tiếng (Peter Pan, Hoàng tử bé...) hoặc các nhân vật lịch sử (Mozart, Beethoven, Leonardo da Vinci...)
+   - 🗼 Địa danh nổi tiếng (Tháp Eiffel, Vạn Lý Trường Thành, Núi Phú Sĩ, Kim tự tháp...)
+   - 🌍 Các quốc gia và nền văn hóa xinh đẹp trên thế giới.
+   - 🌌 Kiến thức về vũ trụ, các vì sao, hành tinh.
+   - 📜 Các sự kiện lịch sử quan trọng được giải thích một cách dễ hiểu cho trẻ em.
+8. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
 {{
   "title": "Tên câu chuyện",
   "story": "Nội dung chi tiết của câu chuyện..."

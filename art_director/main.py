@@ -73,12 +73,14 @@ def _run_long_form(data: dict, env_path: str):
         # OP-4: Reduced from 30000 to 20000 chars — prompt already asks to condense if too long
         text_for_llm = cleaned_text[:20000] if len(cleaned_text) > 20000 else cleaned_text
         
-        prompt = f"""Optimize this Vietnamese book chapter for a bedtime read-aloud.
-CRITICAL INSTRUCTION: The final audio MUST NOT exceed 25 minutes (which is roughly 3000 words or 15000 characters). 
-If the provided text is too long, you MUST skillfully condense or summarize parts of the story. 
-However, you MUST ensure the story remains engaging and has a PROPER, SATISFYING ENDING. Do not let the story cut off abruptly!
+        prompt = f"""Optimize this Vietnamese bedtime story. 
+CRITICAL REQUIREMENTS:
+1. MANDATORY CREATIVE ENRICHMENT: You MUST weave in at least 2-3 educational or cultural elements (Famous Landmarks, Historical Figures like Mozart/Da Vinci, Universe/Science facts, or World Cultures). These must feel natural within the story.
+2. FLOW & WARMTH: Make it sound natural, warm, and engaging for parents to read to children.
+3. LENGTH: The final story MUST be between 2000 and 3000 words (~15-25 minutes read time). If the input is too long, condense it skillfully.
+4. SATISFYING ENDING: Ensure the story has a proper, warm conclusion.
 
-Text:
+Input Text:
 {text_for_llm}"""
         
         response = client.models.generate_content(
