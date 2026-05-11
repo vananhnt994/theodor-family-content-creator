@@ -46,6 +46,7 @@ STRIKTE REGELN:
 5. Hook: Der allererste Satz MUSS eine provokante Frage oder ein direkter Schmerzpunkt für Eltern sein (z. B. 'Mẹ càng bao bọc, con trai càng vô dụng!'). Keine ruhige Szene am Anfang.
 6. Stil: Verwende keine poetischen Beschreibungen wie 'die Uhr tickt' oder 'ein unordentliches Zimmer'. Liefere nur harte Fakten, Ratschläge und klare Aussagen. Am Ende lieferst du genau, was der Wert von dem Inhalt direkt ist.
 7. Bild-Prompt: Liefere zu jeder Szene eine simple ENGLISCHE Bildbeschreibung. GIB DEN CHARAKTEREN KEINE NAMEN! Nutze Rollen (z.B. "a mother", "a 5-year-old girl").
+8. KEINE NAMEN IM VOICEOVER: Verwende niemals Eigennamen für Charaktere im Voiceover-Text (z.B. Giang, Lukas, etc.). Nutze stattdessen allgemeine Bezeichnungen wie "ba mẹ", "người mẹ", "người cha", "con cái", "đứa trẻ"...
 
 Halte dich bei der Formatierung exakt an die im jeweiligen Schritt geforderte JSON-Struktur!
 """
@@ -78,7 +79,8 @@ STIL-REGELN (SHOW, DON'T TELL):
 - Liefere nur harte Fakten, Ratschläge und klare Aussagen.
 - KEINE Romantik-Stile oder pure Theorie-Listen.
 - Nur fließender, direkter Erzähltext.
-- Füge mindestens 2x das Tag <break time="1.0s" /> an wichtigen Stellen ein.
+- KEINE NAMEN: Verwende niemals Eigennamen für Charaktere. Nutze Rollen wie "cha mẹ", "người mẹ", "con cái"...
+- Füge ít nhất 2x das Tag <break time="1.0s" /> an wichtigen Stellen ein.
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
 {{{{

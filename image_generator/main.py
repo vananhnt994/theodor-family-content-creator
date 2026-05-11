@@ -95,26 +95,54 @@ def main():
             continue
             
         logger.info(f"🎨 Generiere Bild für Szene {sn} (9:16) via Vertex AI...")
-        try:
-            result = client.models.generate_images(
-                model='imagen-4.0-fast-generate-001',
-                prompt=prompt,
-                config=types.GenerateImagesConfig(
-                    number_of_images=1,
-                    output_mime_type="image/jpeg",
-                    aspect_ratio="9:16"
+        
+        current_prompt = prompt
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                result = client.models.generate_images(
+                    model='imagen-4.0-fast-generate-001',
+                    prompt=current_prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                        aspect_ratio="9:16"
+                    )
                 )
-            )
-            if result.generated_images:
-                image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
-                image.save(out_path)
-                logger.info(f"✓ Bild gespeichert: {out_path}")
-            else:
-                logger.error(f"✗ Kein Bild für Szene {sn} erhalten.")
-                has_error = True
-        except Exception as e:
-            logger.error(f"✗ Fehler bei Szene {sn}: {e}")
-            has_error = True
+                if result.generated_images:
+                    image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
+                    image.save(out_path)
+                    logger.info(f"✓ Bild gespeichert: {out_path} (Versuch {attempt + 1})")
+
+                    # --- Quality Check Step ---
+                    from image_generator.checker import check_image, refine_prompt_on_failure
+                    logger.info(f"🔍 Prüfe Bildqualität für Szene {sn}...")
+                    check_result = check_image(out_path, current_prompt, scene.get("voiceover_text", ""))
+                    
+                    if check_result.get("is_passed"):
+                        logger.info(f"✅ Qualitätssicherung bestanden (Score: {check_result.get('score')}/10)")
+                        break # Success!
+                    else:
+                        logger.warning(f"⚠️ QUALITÄTS-WARNUNG Szene {sn}: {check_result.get('reason')}")
+                        if attempt < max_retries:
+                            logger.info(f"🔄 Verfeinere Prompt und versuche es erneut...")
+                            current_prompt = refine_prompt_on_failure(
+                                current_prompt, 
+                                check_result.get("reason", ""), 
+                                check_result.get("missing_elements", [])
+                            )
+                            logger.debug(f"Neuer Prompt: {current_prompt}")
+                        else:
+                            logger.error(f"❌ Max. Versuche erreicht für Szene {sn}. Behalte letztes Bild.")
+                    # --------------------------
+                else:
+                    logger.error(f"✗ Kein Bild für Szene {sn} erhalten.")
+                    has_error = True
+                    break
+            except Exception as e:
+                logger.error(f"✗ Fehler bei Szene {sn} (Versuch {attempt + 1}): {e}")
+                if attempt == max_retries:
+                    has_error = True
 
     if has_error:
         sys.exit(1)
