@@ -72,6 +72,8 @@ Dựa trên tiêu đề và nội dung bài viết, hãy tạo nội dung cho vi
 
 QUAN TRỌNG: Tất cả nội dung output PHẢI bằng {channel_cfg.get('language', 'Vietnamesisch')}, kể cả khi bài viết gốc bằng ngôn ngữ khác.
 
+TUYỆT ĐỐI KHÔNG SỬ DỤNG TÊN RIÊNG: Không sử dụng bất kỳ tên riêng nào cho nhân vật (ví dụ: Giang, Lan, Hùng, Lukas...). Hãy thay thế bằng các vai trò chung như "cha mẹ", "người mẹ", "người cha", "đứa trẻ", "con gái", "con trai", "bạn nhỏ"...
+
 1. **title**: Tiêu đề hấp dẫn, viral cho video (tối đa 100 ký tự)
 2. **description**: Mô tả VẤN ĐỀ/TÌNH HUỐNG (2-4 câu)
 3. **solution**: GIẢI PHÁP/LỜI KHUYÊN hoặc CÁCH GIẢI QUYẾT TỪNG BƯỚC cụ thể. QUAN TRỌNG: Nếu bài viết là một câu đố, bài toán hoặc câu chuyện có cách giải quyết logic (ví dụ: chia tài sản, tính toán), bạn BẮT BUỘC phải mô tả chi tiết các bước giải quyết đó (từng bước tính toán thế nào, tại sao lại ra kết quả đó). (3-5 câu thiết thực và chi tiết)

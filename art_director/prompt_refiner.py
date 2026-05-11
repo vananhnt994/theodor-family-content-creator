@@ -56,7 +56,7 @@ def _local_fallback(scenes: list[dict]) -> tuple[list[dict], str]:
 
         # Add Ghibli suffix if not already present
         if "ghibli" not in draft.lower():
-            draft = draft.rstrip(". ") + ". " + GHIBLI_SUFFIX
+            draft = GHIBLI_SUFFIX + ". " + draft.strip(". ")
 
         scene["bild_prompt"] = draft.strip()
 
