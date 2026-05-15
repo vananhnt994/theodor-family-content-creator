@@ -29,6 +29,11 @@ output/
 credentials.json
 client_secret.json
 token.json
+drive_token.json
+youtube_token.json
+
+# Temp Files
+temp_*.mp4
 
 # Scratch files
 scratch_quota.py

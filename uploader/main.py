@@ -3,13 +3,15 @@ import io
 import json
 import logging
 import sys
+import time
 from datetime import datetime
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from dotenv import load_dotenv
+import requests
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from channel_config import load_channel_config
@@ -17,36 +19,34 @@ from channel_config import load_channel_config
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("Uploader")
 
-# Scopes anpassen (Drive + YouTube Upload)
-SCOPES = [
-    "https://www.googleapis.com/auth/drive",
-    "https://www.googleapis.com/auth/youtube.upload"
-]
+# Separate Scopes für Drive und YouTube
+DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
+YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
 # Hinweis: Die Ordner-IDs werden nun dynamisch in der main() geladen
 
-def get_oauth_credentials():
+def get_oauth_credentials(token_file, scopes):
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(token_file):
+        creds = Credentials.from_authorized_user_file(token_file, scopes)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             from google.auth.exceptions import RefreshError
             try:
                 creds.refresh(Request())
             except RefreshError:
-                logger.warning("⚠ Refresh Token ungültig. Lösche 'token.json' und starte neuen Login...")
-                if os.path.exists('token.json'):
-                    os.remove('token.json')
+                logger.warning(f"⚠ Refresh Token ungültig. Lösche '{token_file}' und starte neuen Login...")
+                if os.path.exists(token_file):
+                    os.remove(token_file)
                 creds = None
         
         if not creds:
             if not os.path.exists('client_secret.json'):
                 logger.error("Bitte lade die OAuth Client ID als 'client_secret.json' herunter!")
                 sys.exit(1)
-            flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
+            flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', scopes)
+            creds = flow.run_local_server(port=0, prompt='select_account')
+            with open(token_file, 'w') as token:
                 token.write(creds.to_json())
     return creds
 
@@ -77,6 +77,16 @@ def download_file_in_memory(drive_service, file_id):
         status, done = downloader.next_chunk()
     return fh.getvalue()
 
+def download_video_to_disk(drive_service, file_id, file_path):
+    request = drive_service.files().get_media(fileId=file_id)
+    with open(file_path, 'wb') as fh:
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            if status:
+                logger.info(f"      Drive-Download: {int(status.progress() * 100)}%")
+
 def move_file_in_drive(drive_service, file_id, previous_parents, new_parent):
     # Füge den neuen Parent hinzu und entferne die alten
     drive_service.files().update(
@@ -88,25 +98,96 @@ def move_file_in_drive(drive_service, file_id, previous_parents, new_parent):
 
 # --- Multiplex Upload Stubs ---
 
-def upload_youtube(video_id, seo_data):
+def upload_youtube(video_path, seo_data):
     # Feste, unveränderbare Liste von Hashtags für BeTheo - Family
     static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
     full_description = f"{seo_data.get('description', '')}\n\n{static_hashtags}"
+    title = seo_data.get('title', 'Neues Video')
+    tags_string = seo_data.get('tags', '')
     
-    # TODO: Echter Upload mit youtube API client
-    logger.info("   -> [YouTube] Dummy-Upload wird ausgeführt...")
-    logger.info(f"      Titel: {seo_data.get('title')}")
-    logger.info(f"      Angehängte Hashtags: {static_hashtags}")
-    # Return True on success
-    return True
+    # Tags aufbereiten (als Liste)
+    tags_list = [tag.strip() for tag in tags_string.split(',')] if tags_string else []
+    
+    logger.info("   -> [YouTube] Starte Upload-Prozess...")
+    
+    try:
+        logger.info("      Video wird zu YouTube hochgeladen (Login erforderlich)...")
+        # Authentifizierung genau hier auslösen
+        youtube_creds = get_oauth_credentials('youtube_token.json', YOUTUBE_SCOPES)
+        youtube_service = build("youtube", "v3", credentials=youtube_creds)
+        
+        body = {
+            'snippet': {
+                'title': title,
+                'description': full_description,
+                'tags': tags_list,
+                'categoryId': "22"  # People & Blogs
+            },
+            'status': {
+                'privacyStatus': 'public',
+                'selfDeclaredMadeForKids': False
+            }
+        }
+        
+        media = MediaFileUpload(video_path, chunksize=-1, resumable=True, mimetype='video/mp4')
+        
+        request = youtube_service.videos().insert(
+            part=",".join(body.keys()),
+            body=body,
+            media_body=media
+        )
+        
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                logger.info(f"      YouTube-Upload: {int(status.progress() * 100)}%")
+                
+        logger.info(f"   ✓ [YouTube] Video erfolgreich hochgeladen! Video-ID: {response.get('id')}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"   ✗ [YouTube] Fehler beim Upload: {e}")
+        return False
+    # Hinweis: Cleanup passiert jetzt zentral in der main() Schleife
 
-def upload_meta(video_id, seo_data):
+def upload_meta(video_path, seo_data):
     static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
-    # TODO: Echter Upload via Graph API
-    logger.info(f"   -> [Meta/IG] Upload steht auf Standby (API Keys fehlen). Hashtags: {static_hashtags}")
-    return True
+    page_id = os.getenv("FACEBOOK_PAGE_ID")
+    access_token = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
+    
+    if not page_id or not access_token:
+        logger.info(f"   -> [Meta/FB] Upload übersprungen (API Keys fehlen in .env). Hashtags: {static_hashtags}")
+        return True 
+        
+    logger.info("   -> [Meta/FB] Starte Upload auf Facebook Page...")
+    url = f"https://graph.facebook.com/v21.0/{page_id}/videos"
+    
+    # Beschreibung zusammenbauen
+    description = f"{seo_data.get('title')}\n\n{seo_data.get('description', '')}\n\n{static_hashtags}"
+    
+    payload = {
+        'description': description,
+        'access_token': access_token
+    }
+    
+    try:
+        with open(video_path, 'rb') as f:
+            files = {'source': f}
+            response = requests.post(url, data=payload, files=files)
+            
+        if response.status_code == 200:
+            result = response.json()
+            logger.info(f"   ✓ [Meta/FB] Video erfolgreich hochgeladen! Facebook Video ID: {result.get('id')}")
+            return True
+        else:
+            logger.error(f"   ✗ [Meta/FB] Fehler beim Facebook-Upload: {response.text}")
+            return False
+    except Exception as e:
+        logger.error(f"   ✗ [Meta/FB] Ausnahme beim Facebook-Upload: {e}")
+        return False
 
-def upload_tiktok(video_id, seo_data):
+def upload_tiktok(video_path, seo_data):
     static_hashtags = "#DayCon #NuoiDayCon #TamLyTreEm #GiaDinh"
     # TODO: Echter Upload via TikTok Direct Post
     logger.info(f"   -> [TikTok] Upload steht auf Standby (API Keys fehlen). Hashtags: {static_hashtags}")
@@ -121,8 +202,12 @@ def main():
     logger.info("   🚀 Theodorbot - Service 5: The Uploader        ")
     logger.info("==================================================")
 
-    creds = get_oauth_credentials()
-    drive_service = get_drive_service(creds)
+    # Erstelle Login für Drive (wo die Videos liegen)
+    logger.info("Schritt 0.1: Authentifiziere Google Drive...")
+    drive_creds = get_oauth_credentials('drive_token.json', DRIVE_SCOPES)
+    drive_service = get_drive_service(drive_creds)
+    
+    # YouTube-Login wurde in den Upload-Schritt verschoben!
 
     # Kanal-Konfiguration laden
     channel_cfg = load_channel_config()
@@ -175,14 +260,36 @@ def main():
         
         logger.info("Schritt 3: Multiplex-Upload start...")
         
-        # YouTube
-        success_yt = upload_youtube(video_id, seo_data)
-        # Meta
-        success_meta = upload_meta(video_id, seo_data)
-        # TikTok
-        success_tiktok = upload_tiktok(video_id, seo_data)
+        temp_file_path = f"temp_{video_id}.mp4"
+        success_all = False
         
-        if success_yt and success_meta and success_tiktok:
+        try:
+            # Video EINMAL herunterladen
+            logger.info(f"   -> Lade Video für alle Plattformen herunter...")
+            download_video_to_disk(drive_service, video_id, temp_file_path)
+            
+            # YouTube
+            success_yt = upload_youtube(temp_file_path, seo_data)
+            # Meta
+            success_meta = upload_meta(temp_file_path, seo_data)
+            # TikTok
+            success_tiktok = upload_tiktok(temp_file_path, seo_data)
+            
+            success_all = success_yt and success_meta and success_tiktok
+            
+        except Exception as e:
+            logger.error(f"✗ Kritischer Fehler im Upload-Loop: {e}")
+            success_all = False
+        finally:
+            # Räume temporäre Datei nach allen Uploads auf
+            if os.path.exists(temp_file_path):
+                try:
+                    time.sleep(1)
+                    os.remove(temp_file_path)
+                except:
+                    pass
+
+        if success_all:
             logger.info("Schritt 4: Erfolgs-Prüfung abgeschlossen (Status 200).")
             logger.info("Schritt 5: Das Aufräumen (Move-Befehl)")
             
