@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Ghibli Style Fallback Config
 # ---------------------------------------------------------------------------
-GHIBLI_SUFFIX = "flat 2D Japanese anime illustration, Studio Ghibli style, Hayao Miyazaki, soft watercolor textures, warm pastel colors, cel-shaded anime character design."
+GHIBLI_SUFFIX = "flat 2D Japanese anime illustration, Studio Ghibli style, Hayao Miyazaki, soft watercolor textures, warm pastel colors, cel-shaded anime character design, clear linework, hand-drawn feel, NO photography."
 
 VIDEO_FALLBACK_MAP = {
     "sadness": "Slow gentle zoom in, soft particles drift downward like quiet snowflakes",
@@ -72,7 +72,7 @@ def _local_fallback(scenes: list[dict]) -> tuple[list[dict], str]:
     return scenes, selected_voice
 
 
-def refine_prompts(scenes: list[dict]) -> tuple[list[dict], str] | tuple[None, None]:
+def refine_prompts(scenes: list[dict], full_script: str = "") -> tuple[list[dict], str] | tuple[None, None]:
     """Takes the scenes from Service 1 and refines the draft_prompts using Gemini API.
     Generates both image prompts (bild_prompt) and video prompts (video_prompt).
     Falls back to local processing if Gemini content filter blocks the request.
@@ -91,16 +91,20 @@ def refine_prompts(scenes: list[dict]) -> tuple[list[dict], str] | tuple[None, N
     )
 
     # OP-6: Shortened prompt — Ghibli/character rules already live in SYSTEM_PROMPT
-    prompt = f"""Szenen-Entwürfe:
+    prompt = f"""VOICEOVER SCRIPT CONTEXT (for voice selection):
+{script_preview}
+
+Szenen-Entwürfe:
 
 ```json
 {scenes_json}
 ```
 
 AUFGABE:
-1. Überarbeite jeden `draft_prompt` zu einem `final_prompt` (Bildgenerierung) gemäß deinen System-Prompt-Regeln.
+1. Überarbeite jeden `draft_prompt` zu einem `final_prompt` (Bildgenerierung) gemäß deinen System-Prompt-Regeln. 
+   - ACHTUNG: Der Stil MUSS absolut flach und 2D sein. Vermeide jegliche Tiefe oder Realismus.
 2. Erstelle für jede Szene einen `video_prompt` — sanfte Kamerabewegung, max. 20 Wörter, entspannt und friedlich.
-3. Wähle die passende Stimme. Erlaubte Werte: {voices_str}.
+3. Wähle die am besten zum Inhalt passende Stimme ('Mann' oder 'Frau'). Entscheide basierend auf dem Thema. Erlaubte Werte: {voices_str}.
 
 Nur gültiges JSON zurückgeben:
 

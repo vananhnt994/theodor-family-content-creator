@@ -98,7 +98,7 @@ Input Text:
         logger.warning(f"⚠ Fehler beim Story-Kritiker: {e}. Nutze Originaltext.")
         optimized_text = cleaned_text
 
-    # Step 3: Always use 'Frau' for long form (user request)
+    # Step 3: Always use 'Frau' for bedtime stories (user request)
     selected_voice = "Frau"
     logger.info(f"🎙️  Gewählte Stimme (Fixiert): {selected_voice}")
 
@@ -155,7 +155,8 @@ def main():
         logger.error("✗ Keine Szenen im JSON gefunden.")
         sys.exit(1)
 
-    refined_scenes, selected_voice = refine_prompts(scenes)
+    full_script = " ".join([s.get("voiceover_text", "") for s in scenes])
+    refined_scenes, selected_voice = refine_prompts(scenes, full_script=full_script)
 
     if refined_scenes:
         data["scenes"] = refined_scenes

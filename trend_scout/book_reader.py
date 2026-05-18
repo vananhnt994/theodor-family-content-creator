@@ -63,6 +63,48 @@ Text:
         return True
 
 
+def _has_educational_value(text: str) -> bool:
+    """Uses Gemini to determine if the text has high educational value for parenting."""
+    try:
+        import sys
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from trend_scout.config import GEMINI_MODEL
+        from dotenv import load_dotenv
+        
+        load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+        load_dotenv()
+        
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", ""))
+        
+        sample = text[:3000]
+        prompt = f"""Bạn là một chuyên gia đánh giá nội dung giáo dục sớm và tâm lý trẻ em. 
+Hãy phân tích đoạn văn bản tiếng Việt sau đây và xác định xem nó có mang lại GIÁ TRỊ GIÁO DỤC THỰC TẾ (ví dụ: lời khuyên cụ thể, bài học ý nghĩa, phương pháp nuôi dạy con, kiến thức tâm lý bổ ích) hay không.
+
+Nội dung bị coi là THIẾU GIÁ TRỊ nếu:
+- Chỉ là lời mở đầu, mục lục, hoặc giới thiệu tác giả.
+- Chỉ là những thảo luận chung chung, trừu tượng mà không có lời khuyên cụ thể.
+- Chỉ là liệt kê các khái niệm mà không giải thích ứng dụng.
+- Nội dung quá hàn lâm, khó hiểu cho cha mẹ thông thường.
+
+Hãy giải thích ngắn gọn lý do. Sau đó, ở dòng cuối cùng, viết chính xác "YES" (nếu có giá trị thực tế) hoặc "NO" (nếu không).
+
+Văn bản:
+{sample}"""
+        
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt
+        )
+        if response.candidates:
+            answer = response.text.strip().upper()
+            last_line = answer.split('\n')[-1]
+            return "YES" in last_line
+        return True
+    except Exception as e:
+        logger.warning(f"Value classification failed: {e}. Assuming it has value.")
+        return True
+
+
 def get_available_books(books_dir: str) -> list[str]:
     """Returns a list of PDF file paths in the given directory."""
     if not os.path.exists(books_dir):
@@ -162,9 +204,14 @@ def pick_unread_chapter(filepath: str, used_chapters: set, sequential: bool = Fa
                     logger.info(f"⏭  KI sagt: Kapitel '{selected['title']}' ist keine echte Geschichte. Überspringe.")
                     used_chapters.add(f"{filename}::{selected['title']}")
             else:
-                # No story check required (Short-Form)
-                doc.close()
-                return selected["title"], text
+                # No story check required, but check for educational value (Shorts)
+                logger.info(f"🤖 Prüfe pädagogischen Mehrwert für '{selected['title']}'...")
+                if _has_educational_value(text):
+                    doc.close()
+                    return selected["title"], text
+                else:
+                    logger.info(f"⏭  KI sagt: Kapitel '{selected['title']}' hat keinen ausreichenden pädagogischen Mehrwert. Überspringe.")
+                    used_chapters.add(f"{filename}::{selected['title']}")
         else:
             logger.info(f"⏭  Kapitel '{selected['title']}' ist zu kurz ({len(text) if text else 0} Zeichen). Überspringe.")
             used_chapters.add(f"{filename}::{selected['title']}")
