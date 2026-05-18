@@ -259,11 +259,53 @@ def run_from_books():
 
 
 def run_from_long_books():
-    """Librarian mode: Generates a completely new bedtime story using Gemini instead of reading from a PDF."""
+    """Librarian mode: Picks a chapter from input/long/books/ and tells a story based on its educational value."""
     logger.info("=" * 60)
-    logger.info("📚 SERVICE 0: STORYTELLER-MODUS (Long-Form KI-Generierung)")
+    logger.info("📚 SERVICE 0: LIBRARIAN (Long-Form Buch-Modus)")
     logger.info("=" * 60)
 
+    from trend_scout.book_reader import run_book_reader
+    BOOKS_DIR_LONG = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input", "long", "books")
+    
+    history = _load_history(mode="long")
+    book_data = run_book_reader(history, books_dir=BOOKS_DIR_LONG, sequential=True, check_story=False)
+    
+    if not book_data:
+        sys.exit(1)
+
+    return run_long_storyteller(
+        source_text=book_data["text"], 
+        source_name=book_data["book_filename"], 
+        source_url=book_data["chapter_id"]
+    )
+
+
+def run_long_from_file(file_path: str):
+    """Generates a long bedtime story based on a local text file (Article)."""
+    logger.info("=" * 60)
+    logger.info("📝 SERVICE 0: ARTIKEL-STORYTELLER (Long-Form)")
+    logger.info("=" * 60)
+
+    if not os.path.exists(file_path):
+        logger.error(f"❌ Datei nicht gefunden: {file_path}")
+        sys.exit(1)
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        text = f.read()
+
+    return run_long_storyteller(
+        source_text=text, 
+        source_name=os.path.basename(file_path), 
+        source_url="local_file"
+    )
+
+
+def run_long_storyteller(source_text: str, source_name: str, source_url: str):
+    """
+    Core logic for Service 0 (Long-Form):
+    1. Extracts the 'Erziehungsinhalt' (parenting lesson) from the source.
+    2. Invents a long bedtime story (2000-3500 words) that teaches this lesson.
+    """
     from google import genai
     from google.genai import types
     from trend_scout.config import GEMINI_MODEL
@@ -272,60 +314,70 @@ def run_from_long_books():
         logger.error("❌ Pipeline abgebrochen: API Fehler")
         sys.exit(1)
 
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+
+    # Step 1: Extract the pedagogical lesson
+    logger.info("🧠 Schritt 1: Extrahiere pädagogischen Kernwert...")
+    value_prompt = f"""Bạn là một chuyên gia giáo dục sớm. Hãy đọc văn bản sau và tóm tắt GIÁ TRỊ GIÁO DỤC CỐT LÕI (Erziehungsinhalt) dành cho cha mẹ.
+Tập trung vào: Bài học chính là gì? Cha mẹ nên dạy con điều gì từ nội dung này?
+
+Văn bản:
+{source_text[:5000]}
+
+Trả lời ngắn gọn (1-2 câu) bằng tiếng Việt."""
+    
+    try:
+        value_resp = client.models.generate_content(model=GEMINI_MODEL, contents=value_prompt)
+        core_lesson = value_resp.text.strip()
+        logger.info(f"✅ Kernwert extrahiert: {core_lesson[:100]}...")
+    except Exception as e:
+        logger.warning(f"⚠ Fehler bei Wert-Extraktion: {e}. Nutze Standard-Thema.")
+        core_lesson = "Lòng tốt và sự thấu hiểu"
+
+    # Step 2: Invent the long story around this lesson
     logger.info("")
     logger.info("📖 Lasse KI eine neue Gute-Nacht-Geschichte erfinden (10-25 Min)...")
     logger.info("-" * 40)
 
     try:
-        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
-        
         import random
-        animal_pool = random.sample([
+        animal_choice = random.choice([
             "con sư tử", "con voi", "con cáo", "con gấu", "con thỏ", "con rùa",
-            "con chim đại bàng", "con cá heo", "con hươu cao cổ", "con ngựa vằn",
-            "con bướm", "con ếch", "con hạc", "con chim công", "con mèo rừng",
-            "con lợn rừng", "con gấu trúc", "con hổ", "con chim hải âu",
-            "con rồng nhỏ", "con nhện", "con ong mật", "con rắn hiền lành",
-            "con cừu", "con ngựa", "con bò rừng", "con cú mèo", "con chim sẻ",
-            "con cá vàng", "con hải ly", "con tắc kè hoa", "con chim vẹt",
-            "con sóc đất", "con gà trống", "con vịt trời", "con gấu bắc cực",
-            "con khỉ", "con chim sếu", "con nhím", "con sói"
-        ], k=3)
-        animal_choice = animal_pool[0]
+            "con chim đại bàng", "con cá heo", "con hươu cao cổ", "con mèo rừng",
+            "con gấu trúc", "con hổ", "con rồng nhỏ", "con cú mèo", "con sóc đất"
+        ])
 
         prompt = f"""Bạn là một nhà văn thiếu nhi xuất sắc. Hãy sáng tác một câu chuyện cổ tích / chuyện kể trước khi đi ngủ hoàn toàn mới bằng tiếng Việt.
+
+CHỦ ĐỀ GIÁO DỤC BẮT BUỘC (Trái tim của câu chuyện):
+"{core_lesson}"
+
 YÊU CẦU QUAN TRỌNG:
 1. Câu chuyện phải RẤT DÀI và CHI TIẾT (khoảng 2000 đến 3500 từ), đủ để đọc to trong khoảng 10 đến 25 phút. Đừng tóm tắt, hãy kể thật chi tiết từng hành động, lời thoại.
-2. Mỗi câu chuyện PHẢI TRUYỀN TẢI RÕ RÀNG 1 BÀI HỌC VỀ PHẨM CHẤT TỐT ĐẸP (ví dụ: lòng dũng cảm, sự trung thực, lòng nhân ái, sự kiên nhẫn, lòng biết ơn, v.v.) một cách rất rõ ràng và dễ hiểu cho trẻ em.
+2. Bài học "{core_lesson}" phải được lồng ghép một cách TỰ NHIÊN nhưng RÕ RÀNG xuyên suốt câu chuyện. Trẻ em phải học được điều này sau khi nghe xong.
 3. Nội dung ấm áp, giàu trí tưởng tượng, phù hợp cho trẻ em nghe trước khi ngủ.
-4. NHÂN VẬT CHÍNH phải là: **{animal_choice}** — hãy xây dựng tính cách và ngoại hình thật sinh động, khác biệt.
-5. TUYỆT ĐỐI KHÔNG dùng con sóc (sóc) làm nhân vật trong câu chuyện này.
-6. KHÔNG copy truyện có sẵn, hãy sáng tạo nhân vật và cốt truyện mới hoàn toàn.
-7. LÀM GIÀU SÁNG TẠO (BẮT BUỘC): Trong câu chuyện, hãy đan xen ít nhất 2-3 yếu tố thực tế sau đây một cách tự nhiên để tăng tính giáo dục và hấp dẫn:
-   - 🧚 Nhân vật nổi tiếng (Peter Pan, Hoàng tử bé...) hoặc các nhân vật lịch sử (Mozart, Beethoven, Leonardo da Vinci...)
-   - 🗼 Địa danh nổi tiếng (Tháp Eiffel, Vạn Lý Trường Thành, Núi Phú Sĩ, Kim tự tháp...)
-   - 🌍 Các quốc gia và nền văn hóa xinh đẹp trên thế giới.
-   - 🌌 Kiến thức về vũ trụ, các vì sao, hành tinh.
-   - 📜 Các sự kiện lịch sử quan trọng được giải thích một cách dễ hiểu cho trẻ em.
-8. Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
+4. NHÂN VẬT CHÍNH phải là: **{animal_choice}** — hãy xây dựng tính cách và ngoại hình thật sinh động.
+5. TUYỆT ĐỐI KHÔNG dùng con sóc (sóc) làm nhân vật chính.
+6. LÀM GIÀU SÁNG TẠO (MANDATORY): Lồng ghép ít nhất 2 yếu tố thực tế (Địa danh, Nhân vật lịch sử, Kiến thức vũ trụ...) như một phần của câu chuyện.
+
+Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
 {{
   "title": "Tên câu chuyện",
   "story": "Nội dung chi tiết của câu chuyện..."
 }}"""
-        config = types.GenerateContentConfig(temperature=0.9)  # High temp for creative variety
+        
+        config = types.GenerateContentConfig(temperature=0.8)
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
             config=config
         )
         
-        text_resp = response.text.strip()
-        if text_resp.startswith("```json"):
-            text_resp = text_resp[7:]
-        if text_resp.endswith("```"):
-            text_resp = text_resp[:-3]
-            
-        story_data = json.loads(text_resp.strip())
+        from shared.gemini_utils import extract_json
+        story_data = extract_json(response.text)
+        if not story_data:
+             raise ValueError("Ungültiges JSON von Gemini")
+
         chapter_title = story_data.get("title", "Gute Nacht Geschichte")
         chapter_text = story_data.get("story", "")
         
@@ -335,42 +387,42 @@ YÊU CẦU QUAN TRỌNG:
             
         logger.info(f"✅ Geschichte generiert: '{chapter_title}' ({len(chapter_text)} Zeichen)")
 
+        logger.info("")
+        logger.info("💾 Ergebnis speichern...")
+        logger.info("-" * 40)
+
+        output = {
+            "title": chapter_title,
+            "description": core_lesson,
+            "solution": "",
+            "source": source_name,
+            "source_url": source_url,
+            "full_text": chapter_text,
+            "mode": "long",
+            "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+        }
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
+        logger.info(f"✅ Gespeichert: {output_path}")
+
+        _save_to_history(output, mode="long")
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("📋 ERGEBNIS")
+        logger.info("=" * 60)
+        logger.info(f"   Titel:       {output['title']}")
+        logger.info(f"   Lektion:     {output['description'][:100]}...")
+        logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
+        logger.info("=" * 60)
+        return output
+
     except Exception as e:
         logger.error(f"❌ Fehler bei der KI-Generierung: {e}")
         sys.exit(1)
 
-    logger.info("")
-    logger.info("💾 Ergebnis speichern...")
-    logger.info("-" * 40)
-
-    output = {
-        "title": chapter_title,
-        "description": "",
-        "solution": "",
-        "source": "KI-Generiert",
-        "source_url": f"ai_story_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        "full_text": chapter_text,
-        "mode": "long",
-        "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
-    }
-
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-    logger.info(f"✅ Gespeichert: {output_path}")
-
-    _save_to_history(output, mode="long")
-    logger.info("")
-    logger.info("=" * 60)
-    logger.info("📋 ERGEBNIS")
-    logger.info("=" * 60)
-    logger.info(f"   Titel:       {output['title']}")
-    logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
-    logger.info(f"   Timestamp:   {output['timestamp']}")
-    logger.info("=" * 60)
-    logger.info("🎉 KI Long-Form Geschichte erfolgreich generiert!")
-    return output
 
 
 def main():

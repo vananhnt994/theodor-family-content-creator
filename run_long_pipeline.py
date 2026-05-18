@@ -61,27 +61,34 @@ def run_service(name: str, module_path: str):
         sys.exit(1)
 
 
-def _run_librarian(channel_file: str):
-    """Run Service 0 in Librarian mode (long-form PDF chapter selection)."""
+def _run_long_source(channel_file: str, mode: str = "book"):
+    """Run Service 0 for Long-Form (Librarian or Article mode)."""
     if os.path.exists("output/thema.json"):
         logger.info(f"\n{'='*50}")
-        logger.info("⏭  Überspringe Librarian: 'output/thema.json' existiert bereits.")
+        logger.info("⏭  Überspringe Service 0: 'output/thema.json' existiert bereits.")
         logger.info(f"{'='*50}")
         return
 
-    logger.info(f"\n{'='*50}")
-    logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
-    logger.info(f"{'='*50}")
-
     start_time = time.time()
-
     os.environ["THEODOR_CHANNEL_CONFIG"] = channel_file
     os.environ["THEODOR_PIPELINE_MODE"] = "long"
-    from trend_scout.main import run_from_long_books
-    run_from_long_books()
+    
+    from trend_scout.main import run_from_long_books, run_long_from_file
+
+    if mode == "artikel":
+        artikel_path = os.path.join("input", "shorts", "artikel.txt")
+        logger.info(f"\n{'='*50}")
+        logger.info(f"📝 Artikel-Storyteller: Lese '{artikel_path}'...")
+        logger.info(f"{'='*50}")
+        run_long_from_file(artikel_path)
+    else:
+        logger.info(f"\n{'='*50}")
+        logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
+        logger.info(f"{'='*50}")
+        run_from_long_books()
 
     duration = time.time() - start_time
-    logger.info(f"✅ Librarian erfolgreich in {duration:.1f} Sekunden.\n")
+    logger.info(f"✅ Service 0 erfolgreich in {duration:.1f} Sekunden.\n")
 
 
 def main():
@@ -90,6 +97,8 @@ def main():
         "--channel", type=str, default="betheo",
         help="Name des zu startenden Channels (ohne .json)."
     )
+    parser.add_argument("--artikel", action="store_true", help="Liest input/shorts/artikel.txt als Basis für die Geschichte.")
+    parser.add_argument("--book", action="store_true", help="Wählt ein Kapitel aus input/long/books/ als Basis (Standard).")
     args = parser.parse_args()
 
     channel_file = f"channels/{args.channel}.json"
@@ -101,10 +110,11 @@ def main():
     logger.info("   Gute Nacht Geschichten — bis 12 Minuten")
     logger.info("==================================================")
 
-    # Service 0: Librarian (runs in-process, not subprocess, so env vars are inherited)
-    _run_librarian(channel_file)
+    # Service 0: Get the source and generate the base story
+    mode = "artikel" if args.artikel else "book"
+    _run_long_source(channel_file, mode=mode)
 
-    # Services 1–6 and Archiver
+    # Services 1–4
     services = [
         ("Service 1: Text-Cleaner",   "creator"),
         ("Service 2: Story-Kritiker", "art_director"),

@@ -60,6 +60,7 @@ Trả lời CHỈ bằng JSON với format sau, KHÔNG thêm text nào khác:
 """
 
 CONTENT_GENERATION_PROMPT = f"""Bạn là một nhà sáng tạo nội dung chuyên nghiệp cho TikTok/YouTube Shorts về chủ đề {channel_cfg.get('topic', 'gia đình')}.
+Nhiệm vụ của bạn là tìm ra GIÁ TRỊ CỐT LÕI và LỜI KHUYÊN THIẾT THỰC nhất từ văn bản dưới đây để giúp ích cho cha mẹ trong việc nuôi dạy con cái.
 
 TIÊU ĐỀ ĐÃ CHỌN:
 {{title}}
@@ -68,17 +69,17 @@ NỘI DUNG BÀI VIẾT GỐC:
 {{article_text}}
 
 NHIỆM VỤ:
-Dựa trên tiêu đề và nội dung bài viết, hãy tạo nội dung cho video ngắn.
+Dựa trên tiêu đề và nội dung bài viết, hãy tạo nội dung cho video ngắn. Tập trung tối đa vào giá trị giáo dục và tính ứng dụng thực tế.
 
 QUAN TRỌNG: Tất cả nội dung output PHẢI bằng {channel_cfg.get('language', 'Vietnamesisch')}, kể cả khi bài viết gốc bằng ngôn ngữ khác.
 
-TUYỆT ĐỐI KHÔNG SỬ DỤNG TÊN RIÊNG: Không sử dụng bất kỳ tên riêng nào cho nhân vật (ví dụ: Giang, Lan, Hùng, Lukas...). Hãy thay thế bằng các vai trò chung như "cha mẹ", "người mẹ", "người cha", "đứa trẻ", "con gái", "con trai", "bạn nhỏ"...
+TUYỆT ĐỐI KHÔNG SỬ DỤNG TÊN RIÊNG: Không sử dụng bất kỳ tên riêng nào cho nhân vật. Hãy thay thế bằng các vai trò chung như "cha mẹ", "người mẹ", "người cha", "đứa trẻ", "con cái"...
 
-1. **title**: Tiêu đề hấp dẫn, viral cho video (tối đa 100 ký tự)
-2. **description**: Mô tả VẤN ĐỀ/TÌNH HUỐNG (2-4 câu)
-3. **solution**: GIẢI PHÁP/LỜI KHUYÊN hoặc CÁCH GIẢI QUYẾT TỪNG BƯỚC cụ thể. QUAN TRỌNG: Nếu bài viết là một câu đố, bài toán hoặc câu chuyện có cách giải quyết logic (ví dụ: chia tài sản, tính toán), bạn BẮT BUỘC phải mô tả chi tiết các bước giải quyết đó (từng bước tính toán thế nào, tại sao lại ra kết quả đó). (3-5 câu thiết thực và chi tiết)
+1. **title**: Tiêu đề cực kỳ thu hút, đánh đúng vào nỗi đau hoặc mong muốn của cha mẹ (tối đa 100 ký tự).
+2. **description**: Mô tả VẤN ĐỀ hoặc TÌNH HUỐNG thực tế mà cha mẹ hay gặp phải (2-3 câu). Phải làm nổi bật TẠI SAO vấn đề này lại quan trọng.
+3. **solution**: GIẢI PHÁP hoặc BÀI HỌC then chốt. Phải là những bước hành động cụ thể, dễ hiểu và có giá trị giáo dục cao. Đừng viết chung chung, hãy viết sao cho cha mẹ có thể áp dụng được ngay (3-5 câu).
 
-Giọng văn: ấm áp, gần gũi, như một người bạn chia sẻ kinh nghiệm.
+Giọng văn: Chân thành, chuyên gia nhưng gần gũi, mang tính xây dựng và tích cực.
 
 Trả lời CHỈ bằng JSON với format sau, KHÔNG thêm text nào khác:
 {{{{
