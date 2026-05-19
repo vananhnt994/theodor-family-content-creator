@@ -9,7 +9,7 @@ on:
       mode:
         description: "Pipeline-Modus"
         required: false
-        default: "default"
+        default: "book"
         type: choice
         options:
           - default
