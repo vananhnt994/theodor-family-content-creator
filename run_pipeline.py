@@ -119,7 +119,6 @@ def main():
             ("Service 1: The Creator", "creator"),
             ("Service 2: The Art Director", "art_director"),
             ("Service 3A: Bild-Beschaffer", "image_generator"),
-            ("Service 3B: Ton-Meister", "audio_generator"),
             ("Service 4: Archiver", "archiver")
         ]
     elif args.book:
@@ -131,7 +130,6 @@ def main():
             ("Service 1: The Creator", "creator"),
             ("Service 2: The Art Director", "art_director"),
             ("Service 3A: Bild-Beschaffer", "image_generator"),
-            ("Service 3B: Ton-Meister", "audio_generator"),
             ("Service 4: Archiver", "archiver")
         ]
     else:
@@ -141,7 +139,6 @@ def main():
             ("Service 1: The Creator", "creator"),
             ("Service 2: The Art Director", "art_director"),
             ("Service 3A: Bild-Beschaffer", "image_generator"),
-            ("Service 3B: Ton-Meister", "audio_generator"),
             ("Service 4: Archiver", "archiver")
         ]
     
