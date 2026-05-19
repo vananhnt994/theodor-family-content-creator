@@ -22,8 +22,10 @@ env/
 # Environment
 .env
 
-# Output
+# Output (alles ignorieren außer Historie-Dateien)
 output/
+!output/historie_shorts.json
+!output/historie_long.json
 
 # Secrets & Credentials
 credentials.json

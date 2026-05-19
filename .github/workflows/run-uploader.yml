@@ -1,0 +1,46 @@
+name: "📤 Video Uploader"
+
+on:
+  schedule:
+    # Täglich um 12:00 Uhr deutscher Zeit (10:00 UTC) – genug Zeit nach der Pipeline
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+  ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+  FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+  FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+
+jobs:
+  run-uploader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Dependencies installieren
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔑 Google Credentials einrichten
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+          echo '${{ secrets.CLIENT_SECRET_JSON }}' > client_secret.json
+          echo '${{ secrets.DRIVE_TOKEN_JSON }}' > drive_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_JSON }}' > youtube_token.json
+
+      - name: 📤 Uploader starten
+        run: python -m uploader

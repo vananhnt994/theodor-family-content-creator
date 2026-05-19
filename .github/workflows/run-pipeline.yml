@@ -1,0 +1,101 @@
+name: "🎬 Content Pipeline"
+
+on:
+  schedule:
+    # Täglich um 08:00 Uhr deutscher Zeit (06:00 UTC)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline-Modus"
+        required: false
+        default: "default"
+        type: choice
+        options:
+          - default
+          - book
+          - artikel
+
+# Erlaubt dem GITHUB_TOKEN, Änderungen zu pushen
+permissions:
+  contents: write
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+  ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  DRIVE_FOLDER_ID: ${{ secrets.DRIVE_FOLDER_ID }}
+  FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+  FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Dependencies installieren
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🎭 Playwright Browsers installieren
+        run: playwright install --with-deps chromium
+
+      - name: 🔑 Google Credentials einrichten
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+          echo '${{ secrets.DRIVE_TOKEN_JSON }}' > drive_token.json
+          echo '${{ secrets.TOKEN_JSON }}' > token.json
+
+      - name: 🚀 Pipeline starten
+        run: |
+          MODE="${{ github.event.inputs.mode || 'book' }}"
+          
+          if [ "$MODE" = "book" ]; then
+            echo "📚 Starte Pipeline im Buch-Modus..."
+            python run_pipeline.py --channel betheo --book
+          elif [ "$MODE" = "artikel" ]; then
+            echo "📝 Starte Pipeline im Artikel-Modus..."
+            python run_pipeline.py --channel betheo --artikel
+          else
+            echo "🔍 Starte Pipeline im Standard-Modus (Trend-Scout)..."
+            python run_pipeline.py --channel betheo
+          fi
+
+      - name: 💾 Historie-Dateien zurück ins Repo committen
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Historie-Dateien aus .gitignore herausnehmen (Force-Add)
+          git add -f output/historie_shorts.json || true
+          git add -f output/historie_long.json || true
+          
+          # Nur committen wenn sich etwas geändert hat
+          if git diff --cached --quiet; then
+            echo "📋 Keine Änderungen an Historie-Dateien – nichts zu committen."
+          else
+            git commit -m "🤖 Historie aktualisiert [skip ci]"
+            git push
+            echo "✅ Historie-Dateien erfolgreich committed und gepusht!"
+          fi
+
+      - name: 📤 Output als Artefakt hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-output-${{ github.run_number }}
+          path: output/
+          retention-days: 7
