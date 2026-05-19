@@ -78,6 +78,7 @@ def refine_prompts(scenes: list[dict], full_script: str = "") -> tuple[list[dict
     Falls back to local processing if Gemini content filter blocks the request.
     """
     client = create_client()
+    script_preview = full_script[:1000] if full_script else "(Kein Skript vorhanden)"
 
     available_voices = list(channel_cfg.get("voices", {"Mann": "", "Frau": ""}).keys())
     voices_str = ", ".join([f"'{v}'" for v in available_voices])
