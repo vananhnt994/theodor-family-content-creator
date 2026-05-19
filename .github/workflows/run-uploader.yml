@@ -2,8 +2,8 @@ name: "📤 Video Uploader"
 
 on:
   schedule:
-    # Täglich um 12:00 Uhr deutscher Zeit (10:00 UTC) – genug Zeit nach der Pipeline
-    - cron: "0 10 * * *"
+    # Montag, Mittwoch, Freitag um 12:00 Uhr deutscher Zeit (10:00 UTC) – genug Zeit nach der Pipeline
+    - cron: "0 10 * * 1,3,5"
   workflow_dispatch:
 
 env:
