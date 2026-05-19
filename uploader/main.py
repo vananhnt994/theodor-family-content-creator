@@ -270,10 +270,14 @@ def main():
             
             # YouTube
             success_yt = upload_youtube(temp_file_path, seo_data)
-            # Meta
-            success_meta = upload_meta(temp_file_path, seo_data)
-            # TikTok
-            success_tiktok = upload_tiktok(temp_file_path, seo_data)
+            
+            # Meta (Aktuell deaktiviert, da FACEBOOK_PAGE_ACCESS_TOKEN in .env noch ein Platzhalter ist)
+            # logger.info("   -> [Meta/FB] Upload vorübergehend deaktiviert.")
+            success_meta = True
+            
+            # TikTok (Aktuell deaktiviert / Standby)
+            # logger.info("   -> [TikTok] Upload vorübergehend deaktiviert.")
+            success_tiktok = True
             
             success_all = success_yt and success_meta and success_tiktok
             
