@@ -182,99 +182,26 @@ Verbindet das Cover-Bild (Service 3A) und die Audiodatei (Service 3B) mittels FF
 
 Die Pipeline nutzt Google Gemini als Cloud-LLM für intelligente Textverarbeitung und Google Vertex AI für die Bildgenerierung. ElevenLabs liefert natürliche Stimmen. Am Ende steht der manuelle Feinschliff in Adobe Premiere oder Google Labs Flow.
 
-```text
-=============================================================================
-                              START (Automatischer Auslöser)
-        Shorts: Di, Do, So um 08:00 Uhr (GitHub Actions: run-pipeline.yml)
-        Uploader: Mo, Mi, Fr um 14:00 Uhr (GitHub Actions: run-uploader.yml)
-                    ODER: python run_pipeline.py --artikel
-=============================================================================
-                                      │
-                                      ▼
-    ┌───────────────────────────────────────────────────────────────────────────┐
-    │ SERVICE 0: DER TREND-SCOUT (Themenfindung)                                │
-    │ Technologie: Python + Playwright + Gemini Flash Lite                      │
-    │                                                                           │
-    │ Funktion: 1. Liest Schlagzeilen (Webtretho, VnExpress, BBC, etc.).        │
-    │           2. Gemini wählt das beste, viralste Thema aus.                  │
-    │           3. Scrapt den Artikel und generiert Video-Ideen.                │
-    │ ALTERNATIV: Liest eigenen Text aus input/artikel.txt (--artikel)           │
-    │ Output: 'thema.json' (Titel, Beschreibung, Lösung)                       │
-    └───────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼ (Gibt Thema an Service 1)
-    ┌───────────────────────────────────────────────────────────────────────────┐
-    │ SERVICE 1: THE CREATOR (Redaktion & 60s-Drehbuch)                         │
-    │ Technologie: Python + Gemini Flash Lite                                   │
-    │                                                                           │
-    │ Funktion: Liest 'thema.json'. Schreibt ein warmes 60-Sekunden-Drehbuch.   │
-    │           Zerteilt es in 4-6 Szenen à 5-8 Sekunden.                      │
-    │           Erstellt erste englische Bild-Prompts mit Character Consistency. │
-    │ Output: 'roh_skript.json'                                                │
-    └───────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼ (Gibt roh_skript.json an Service 2)
-    ┌────────────────────────�    ┌───────────────────────────────────┐   ┌───────────────────────────────────┐
-    │ SERVICE 3A: DER BILD-BESCHAFFER   │   │ SERVICE 3B: DER TON-MEISTER       │
-    │ Technologie: Python + Vertex AI   │   │ (DEAKTIVIERT FÜR SHORTS)          │
-    │ (Imagen 4 Fast)                   │   │ Technologie: Python + ElevenLabs  │
-    │                                   │   │ (Eleven v3)                       │
-    │ Funktion: Sendet Ghibli-Prompts   │   │                                   │
-    │ an Vertex AI. Lädt 9:16 Bilder.   │   │ Funktion: Wandelt Texte in        │
-    │ Output: Szene_01.jpg, etc.        │   │ natürliche vietnamesische         │
-    │                                   │   │ Sprecherstimme um.               │
-    └───────────────────────────────────┘   └───────────────────────────────────┘──────────────────────────────────────────────────────────┘
-                                      │
-              ┌───────────────────────┴───────────────────────┐
-              ▼ (Liest finale_prompts.json)                   ▼ (Liest Skript-Texte)
-    ┌───────────────────────────────────┐   ┌───────────────────────────────────┐
-    │ SERVICE 3A: DER BILD-BESCHAFFER   │   │ SERVICE 3B: DER TON-MEISTER       │
-    │ Technologie: Python + Vertex AI   │   │ Technologie: Python + ElevenLabs  │
-    │ (Imagen 4 Fast)                   │   │ (Eleven v3)                       │
-    │                                   │   │                                   │
-    │ Funktion: Sendet Ghibli-Prompts   │   │ Funktion: Wandelt Texte in        │
-    │ an Vertex AI. Lädt 9:16 Bilder.   │   │ natürliche vietnamesische         │
-    │ Output: Szene_01.jpg, etc.        │   │ Sprecherstimme um.               │
-    └───────────────────────────────────┘   │ Output: Szene_01.wav, etc.        │
-              │                             └───────────────────────────────────┘
-              └───────────────────────┬───────────────────────┘
-                                      ▼
-                                  (Video & Assets bereit)
-┌───────────────────────────────────────────────────────────────────────────┐
-│ SERVICE 4: DER ARCHIVER (Cloud-Upload & Cleanup)                          │
-│ Technologie: Python + Google Drive API (OAuth 2.0)                        │
-│                                                                           │
-│ Funktion: 1. Erstellt Storyboard.md (inkl. Video-Prompts).               │
-│           2. Zippt alle Bilder, Audios und Skripte.                      │
-│           3. Lädt alles nach Google Drive hoch.                          │
-│ Output: Upload-Bestätigung & Google Drive Link                           │
-└───────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌───────────────────────────────────────────────────────────────────────────┐
-│ SERVICE 5: THE UPLOADER (Multi-Plattform-Verteilung)                      │
-│ Technologie: Python + YouTube/Meta/TikTok APIs                            │
-│                                                                           │
-│ Funktion: 1. Scannt 'ready_to_post' Drive-Ordner nach .mp4 Videos.       │
-│           2. Lädt SEO-Daten und veröffentlicht auf allen Plattformen.    │
-│           3. Verschiebt fertige Videos ins Archiv.                       │
-│ Output: Veröffentlichte Videos auf YouTube, TikTok, Instagram             │
-└───────────────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-=============================================================================
-                      VISUELLE KOMPOSITION (Der Mensch)
-                Plattform: https://labs.google/flow/
-=============================================================================
-                                  │
-                                  ▼
-                    GOOGLE LABS FLOW (Web-Workspace)
-          1. Öffne den hochgeladenen Drive-Ordner von Service 4.
-          2. Importiere das Voiceover in die Flow-Timeline.
-          3. Nutze die vorbereiteten Bild-Prompts und Video-Prompts
-             aus der Storyboard.md, um in Flow direkt Bilder und 
-             Videos zu generieren und zusammenzusetzen.
+```mermaid
+flowchart TD
+    A["Start\n(GitHub Actions oder manuell)"] --> B["Service 0: Trend-Scout\nOutput: output/thema.json"]
+    B --> C["Service 1: Creator\nOutput: output/roh_skript.json"]
+    C --> D["Service 2: Art Director\nOutput: output/finale_prompts.json"]
+    D --> E["Service 3A: Image Generator\nOutput: Szene_XX.jpg"]
+    D --> F["Service 3B: Audio Generator\nOutput: Szene_XX.wav"]
+    E --> G["Service 4: Archiver\nStoryboard + ZIP + Drive-Upload"]
+    F --> G
+    G --> H["Service 5: Uploader\nYouTube / TikTok / Instagram"]
+    G --> I["Google Labs Flow\nManuelle visuelle Komposition"]
 ```
+
+### Ablauf in Kurzform
+
+1. **Start** über Zeitplan (`run-pipeline.yml`, `run-uploader.yml`) oder manuell per CLI.
+2. **Themenfindung & Skriptaufbau** durch Trend-Scout, Creator und Art Director.
+3. **Asset-Erstellung**: Bilder (Service 3A) und optional Audio (Service 3B).
+4. **Archivierung & Cloud-Upload** durch den Archiver.
+5. **Verteilung** über den Uploader oder manuelle Weiterverarbeitung in Google Labs Flow.
 
 ---
 
