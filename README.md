@@ -19,6 +19,13 @@ python run_long_pipeline.py --channel betheo
 python run_uploader.py --channel betheo
 ```
 
+### ⏰ Automatisierte Ausführung (GitHub Actions)
+
+Die Pipelines laufen vollautomatisch zu folgenden Zeiten:
+- **Shorts-Pipeline (`run-pipeline.yml`)**: Jeden **Dienstag, Donnerstag und Sonntag um 08:00 Uhr** deutscher Zeit (06:00 UTC).
+- **Video-Uploader (`run-uploader.yml`)**: Jeden **Montag, Mittwoch und Freitag um 14:00 Uhr** deutscher Zeit (12:00 UTC).
+
+
 ### 📝 Eigener Artikel-Modus
 
 Statt den Trend-Scout nach Themen suchen zu lassen, kannst du deinen eigenen Artikel schreiben:
@@ -91,6 +98,9 @@ Der Übergang vom lokalen Denken zur Cloud-Power für hochauflösende Grafiken.
 ### 🎙️ Service 3B: Der Ton-Meister (Text-to-Speech)
 Erzeugt natürlich klingende Sprecherstimmen.
 
+> [!NOTE]
+> **Aktueller Status für Shorts:** Dieser Service ist für die Short-Form-Pipeline (Shorts) in `run_pipeline.py` derzeit standardmäßig deaktiviert, um Audio extern oder manuell zu verarbeiten. Er kann bei Bedarf in `run_pipeline.py` durch Einkommentieren wieder aktiviert werden. Für die Long-Form-Pipeline (`run_long_pipeline.py`) ist er weiterhin voll aktiv.
+
 * **Features:**
   * **ElevenLabs Integration:** Nutzt das ElevenLabs Eleven v3 Modell für natürliche vietnamesische Stimmen.
   * **Stimmen (konfigurierbar in `channels/<channel>.json`):**
@@ -144,7 +154,14 @@ Optimiert den Text mit LLM-Unterstützung für das Vorlesen. Wählt dynamisch ei
 ### 🎙️ Service 3B: Ton-Meister (in audio_generator)
 Teilt den sehr langen Text in kleinere Chunks auf (Chunking), verlangsamt die Sprechgeschwindigkeit (für eine ruhige "Gute-Nacht"-Stimmung) und fügt die Audio-Schnipsel per ElevenLabs zusammen.
 
-*(Hinweis: Für Long-Form werden keine Cover-Bilder oder Videos generiert. Das finale Produkt ist eine Audiodatei sowie der zugehörige Text, ideal für Podcasts oder Hörspiele).*
+### 🖼️ Service 3A: Cover-Bild (in image_generator) [Inaktiv]
+Generiert ein passendes Cover-Bild im Ghibli-Stil für das Hörspiel. 
+
+### 🎬 Service 6: Der Video-Editor (in video_editor) [Inaktiv]
+Verbindet das Cover-Bild (Service 3A) und die Audiodatei (Service 3B) mittels FFmpeg zu einem fertigen Video mit sanftem Zoom-Effekt (Ken Burns).
+
+> [!NOTE]
+> **Aktueller Status für Long-Form:** Standardmäßig sind Service 3A (Cover-Bild) und Service 6 (Video-Editor) in `run_long_pipeline.py` deaktiviert, da das Hauptprodukt für Hörspiele eine reine Audiodatei und der zugehörige Text sind. Sie sind jedoch voll implementiert und können im Pipeline-Skript bei Bedarf durch einfaches Einkommentieren in der `services`-Liste aktiviert werden.
 
 ---
 
@@ -168,7 +185,8 @@ Die Pipeline nutzt Google Gemini als Cloud-LLM für intelligente Textverarbeitun
 ```text
 =============================================================================
                               START (Automatischer Auslöser)
-                        Uhrzeit: z.B. Jeden Morgen um 09:00 Uhr
+        Shorts: Di, Do, So um 08:00 Uhr (GitHub Actions: run-pipeline.yml)
+        Uploader: Mo, Mi, Fr um 14:00 Uhr (GitHub Actions: run-uploader.yml)
                     ODER: python run_pipeline.py --artikel
 =============================================================================
                                       │
@@ -196,15 +214,16 @@ Die Pipeline nutzt Google Gemini als Cloud-LLM für intelligente Textverarbeitun
     └───────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼ (Gibt roh_skript.json an Service 2)
-    ┌───────────────────────────────────────────────────────────────────────────┐
-    │ SERVICE 2: THE ART DIRECTOR (Ghibli 2D Stil-Kontrolle)                    │
-    │ Technologie: Python + Gemini Flash Lite                                   │
-    │                                                                           │
-    │ Funktion: Verfeinert Bild-Prompts → flat 2D Ghibli Stil, simple BGs.     │
-    │           Erstellt zusätzlich Video-Prompts (sanfte Animationen).         │
-    │           Wählt passende Sprecherstimme.                                 │
-    │ Output: 'finale_prompts.json' (bild_prompt + video_prompt pro Szene)      │
-    └───────────────────────────────────────────────────────────────────────────┘
+    ┌────────────────────────�    ┌───────────────────────────────────┐   ┌───────────────────────────────────┐
+    │ SERVICE 3A: DER BILD-BESCHAFFER   │   │ SERVICE 3B: DER TON-MEISTER       │
+    │ Technologie: Python + Vertex AI   │   │ (DEAKTIVIERT FÜR SHORTS)          │
+    │ (Imagen 4 Fast)                   │   │ Technologie: Python + ElevenLabs  │
+    │                                   │   │ (Eleven v3)                       │
+    │ Funktion: Sendet Ghibli-Prompts   │   │                                   │
+    │ an Vertex AI. Lädt 9:16 Bilder.   │   │ Funktion: Wandelt Texte in        │
+    │ Output: Szene_01.jpg, etc.        │   │ natürliche vietnamesische         │
+    │                                   │   │ Sprecherstimme um.               │
+    └───────────────────────────────────┘   └───────────────────────────────────┘──────────────────────────────────────────────────────────┘
                                       │
               ┌───────────────────────┴───────────────────────┐
               ▼ (Liest finale_prompts.json)                   ▼ (Liest Skript-Texte)
