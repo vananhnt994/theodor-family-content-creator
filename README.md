@@ -23,7 +23,7 @@ python run_uploader.py --channel betheo
 
 Die Pipelines laufen vollautomatisch zu folgenden Zeiten:
 - **Shorts-Pipeline (`run-pipeline.yml`)**: Jeden **Dienstag, Donnerstag und Sonntag um 08:00 Uhr** deutscher Zeit (06:00 UTC).
-- **Video-Uploader (`run-uploader.yml`)**: Jeden **Montag, Mittwoch und Freitag um 14:00 Uhr** deutscher Zeit (12:00 UTC).
+- **Video-Uploader (`run-uploader.yml`)**: Jeden **Montag, Mittwoch und Freitag um 14:15 Uhr** deutscher Zeit (12:15 UTC).
 
 
 ### 📝 Eigener Artikel-Modus
