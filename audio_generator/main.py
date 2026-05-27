@@ -49,21 +49,33 @@ def _split_into_chunks(text: str, limit: int = CHUNK_CHAR_LIMIT) -> list[str]:
     return chunks
 
 
-def generate_long_audio(text: str, voice_id: str, client: ElevenLabs, out_path: str):
+def generate_long_audio(text: str, voice_id: str, client: ElevenLabs, out_path: str, category: str = "schlaf"):
     """
-    Generate audio for a long text (5-12 minutes) by splitting into chunks
+    Generate audio for a long text by splitting into chunks
     and concatenating the binary audio data.
+    Category controls the voice dynamics:
+    - schlaf: calm, stable narration for bedtime
+    - natur: slightly more energetic for nature discovery
     """
     chunks = _split_into_chunks(text)
-    logger.info(f"🎙️ Long-Form Audio: {len(chunks)} Chunks ({len(text)} Zeichen gesamt)...")
+    logger.info(f"🎙️ Long-Form Audio ({category}): {len(chunks)} Chunks ({len(text)} Zeichen gesamt)...")
 
-    voice_settings = VoiceSettings(
-        stability=0.60,
-        similarity_boost=0.75,
-        style=0.0,
-        use_speaker_boost=True,
-        speed=1.0  # Calm narration speed for bedtime stories
-    )
+    if category == "natur":
+        voice_settings = VoiceSettings(
+            stability=0.50,
+            similarity_boost=0.80,
+            style=0.0,
+            use_speaker_boost=True,
+            speed=1.0  # Normal narration speed for nature exploration
+        )
+    else:
+        voice_settings = VoiceSettings(
+            stability=0.60,
+            similarity_boost=0.75,
+            style=0.0,
+            use_speaker_boost=True,
+            speed=1.0  # Calm narration speed for bedtime stories
+        )
 
     audio_data = b""
     for i, chunk in enumerate(chunks, 1):
@@ -123,6 +135,7 @@ def main():
     # Long-Form mode: chunked audio generation with calm voice settings
     # ------------------------------------------------------------------
     if data.get("mode") == "long":
+        category = data.get("category", "schlaf")
         text = data.get("optimized_text", data.get("cleaned_text", ""))
         if not text:
             logger.error("✗ Kein Text ('optimized_text' oder 'cleaned_text') in finale_prompts.json gefunden.")
@@ -132,9 +145,9 @@ def main():
             logger.info(f"Audio existiert bereits ({out_path}). Überspringe Generierung...")
             return
 
-        logger.info(f"🎙️ Long-Form: Generiere Voiceover mit Stimme '{selected_voice}' (ID: {voice_id})...")
+        logger.info(f"🎙️ Long-Form ({category}): Generiere Voiceover mit Stimme '{selected_voice}' (ID: {voice_id})...")
         try:
-            generate_long_audio(text, voice_id, client, out_path)
+            generate_long_audio(text, voice_id, client, out_path, category=category)
         except Exception as e:
             logger.error(f"✗ Fehler bei Long-Form Audio Generierung: {e}")
             if os.path.exists(out_path):

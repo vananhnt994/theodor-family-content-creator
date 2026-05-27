@@ -12,7 +12,8 @@ from datetime import datetime, timezone
 
 from trend_scout.config import (
     OUTPUT_DIR, OUTPUT_FILENAME,
-    HISTORY_SHORTS_FILENAME, HISTORY_LONG_FILENAME, HISTORY_FILENAME
+    HISTORY_SHORTS_FILENAME, HISTORY_LONG_FILENAME,
+    HISTORY_LONG_NATUR_FILENAME, HISTORY_FILENAME
 )
 from trend_scout.scraper import scrape_headlines, scrape_article
 from trend_scout.analyzer import check_connection, pick_topic, generate_content
@@ -29,8 +30,13 @@ logger = logging.getLogger(__name__)
 
 
 def _load_history(mode: str = "shorts") -> list[dict]:
-    """Load existing topic history (shorts or long mode)."""
-    filename = HISTORY_LONG_FILENAME if mode == "long" else HISTORY_SHORTS_FILENAME
+    """Load existing topic history (shorts, long, or long_natur mode)."""
+    if mode == "long_natur":
+        filename = HISTORY_LONG_NATUR_FILENAME
+    elif mode == "long":
+        filename = HISTORY_LONG_FILENAME
+    else:
+        filename = HISTORY_SHORTS_FILENAME
     history_path = os.path.join(OUTPUT_DIR, filename)
     if os.path.exists(history_path):
         try:
@@ -46,7 +52,12 @@ def _load_history(mode: str = "shorts") -> list[dict]:
 def _save_to_history(entry: dict, mode: str = "shorts") -> None:
     """Append a topic entry to the appropriate history file."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    filename = HISTORY_LONG_FILENAME if mode == "long" else HISTORY_SHORTS_FILENAME
+    if mode == "long_natur":
+        filename = HISTORY_LONG_NATUR_FILENAME
+    elif mode == "long":
+        filename = HISTORY_LONG_FILENAME
+    else:
+        filename = HISTORY_SHORTS_FILENAME
     history_path = os.path.join(OUTPUT_DIR, filename)
     history = _load_history(mode)
     history.append(entry)
@@ -259,16 +270,27 @@ def run_from_books():
 
 
 def run_from_long_books():
-    """Librarian mode: Picks a chapter from input/long/books/ and tells a story based on its educational value."""
+    """Librarian mode: Picks a chapter from input/long/books/ (or books_natur/) and tells a story."""
+    category = os.environ.get("THEODOR_LONG_CATEGORY", "schlaf")
+    
     logger.info("=" * 60)
-    logger.info("📚 SERVICE 0: LIBRARIAN (Long-Form Buch-Modus)")
+    if category == "natur":
+        logger.info("🌿 SERVICE 0: LIBRARIAN (Long-Form Natur-Modus)")
+    else:
+        logger.info("📚 SERVICE 0: LIBRARIAN (Long-Form Buch-Modus)")
     logger.info("=" * 60)
 
-    from trend_scout.book_reader import run_book_reader
-    BOOKS_DIR_LONG = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input", "long", "books")
+    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_LONG, BOOKS_DIR_LONG_NATUR
+
+    if category == "natur":
+        books_dir = BOOKS_DIR_LONG_NATUR
+        history_mode = "long_natur"
+    else:
+        books_dir = BOOKS_DIR_LONG
+        history_mode = "long"
     
-    history = _load_history(mode="long")
-    book_data = run_book_reader(history, books_dir=BOOKS_DIR_LONG, sequential=True, check_story=False)
+    history = _load_history(mode=history_mode)
+    book_data = run_book_reader(history, books_dir=books_dir, sequential=True, check_story=False)
     
     if not book_data:
         sys.exit(1)
@@ -276,7 +298,8 @@ def run_from_long_books():
     return run_long_storyteller(
         source_text=book_data["text"], 
         source_name=book_data["book_filename"], 
-        source_url=book_data["chapter_id"]
+        source_url=book_data["chapter_id"],
+        category=category
     )
 
 
@@ -300,11 +323,11 @@ def run_long_from_file(file_path: str):
     )
 
 
-def run_long_storyteller(source_text: str, source_name: str, source_url: str):
+def run_long_storyteller(source_text: str, source_name: str, source_url: str, category: str = "schlaf"):
     """
     Core logic for Service 0 (Long-Form):
-    1. Extracts the 'Erziehungsinhalt' (parenting lesson) from the source.
-    2. Invents a long bedtime story (2000-3500 words) that teaches this lesson.
+    - schlaf: Extracts lesson, invents a long bedtime story (2000-3500 words).
+    - natur: Extracts nature topic, creates a short educational story (~700 words, 6 blocks).
     """
     from google import genai
     from google.genai import types
@@ -316,9 +339,17 @@ def run_long_storyteller(source_text: str, source_name: str, source_url: str):
 
     client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
-    # Step 1: Extract the pedagogical lesson
-    logger.info("🧠 Schritt 1: Extrahiere pädagogischen Kernwert...")
-    value_prompt = f"""Bạn là một chuyên gia giáo dục sớm. Hãy đọc văn bản sau và tóm tắt GIÁ TRỊ GIÁO DỤC CỐT LÕI (Erziehungsinhalt) dành cho cha mẹ.
+    # Step 1: Extract the core lesson / nature topic
+    logger.info("🧠 Schritt 1: Extrahiere Kernthema...")
+    if category == "natur":
+        value_prompt = f"""Bạn là một chuyên gia về thiên nhiên và động vật. Hãy đọc văn bản sau và xác định CHỦ ĐỀ THIÊN NHIÊN CHÍNH (ví dụ: loài động vật, hiện tượng tự nhiên, hệ sinh thái).
+
+Văn bản:
+{source_text[:5000]}
+
+Trả lời ngắn gọn (1-2 câu) bằng tiếng Việt — mô tả chủ đề thiên nhiên chính."""
+    else:
+        value_prompt = f"""Bạn là một chuyên gia giáo dục sớm. Hãy đọc văn bản sau và tóm tắt GIÁ TRỊ GIÁO DỤC CỐT LÕI (Erziehungsinhalt) dành cho cha mẹ.
 Tập trung vào: Bài học chính là gì? Cha mẹ nên dạy con điều gì từ nội dung này?
 
 Văn bản:
@@ -329,13 +360,132 @@ Trả lời ngắn gọn (1-2 câu) bằng tiếng Việt."""
     try:
         value_resp = client.models.generate_content(model=GEMINI_MODEL, contents=value_prompt)
         core_lesson = value_resp.text.strip()
-        logger.info(f"✅ Kernwert extrahiert: {core_lesson[:100]}...")
+        logger.info(f"✅ Kernthema extrahiert: {core_lesson[:100]}...")
     except Exception as e:
-        logger.warning(f"⚠ Fehler bei Wert-Extraktion: {e}. Nutze Standard-Thema.")
-        core_lesson = "Lòng tốt và sự thấu hiểu"
+        logger.warning(f"⚠ Fehler bei Themen-Extraktion: {e}. Nutze Standard-Thema.")
+        core_lesson = "Khám phá thiên nhiên" if category == "natur" else "Lòng tốt và sự thấu hiểu"
 
-    # Step 2: Invent the long story around this lesson
+    # Step 2: Generate the story
     logger.info("")
+
+    if category == "natur":
+        return _generate_natur_story(client, core_lesson, source_name, source_url)
+    else:
+        return _generate_schlaf_story(client, core_lesson, source_name, source_url)
+
+
+def _generate_natur_story(client, core_lesson: str, source_name: str, source_url: str):
+    """Generate a ~700-word nature exploration story with 6 content blocks."""
+    from google.genai import types
+    from trend_scout.config import GEMINI_MODEL
+
+    logger.info("🌿 Lasse KI eine Natur-Entdeckungsgeschichte erfinden (~6 Min)...")
+    logger.info("-" * 40)
+
+    try:
+        import random
+        animal_choice = random.choice([
+            "con sóc", "con nai", "con cáo", "con gấu", "con thỏ", "con rùa",
+            "con chim đại bàng", "con cá heo", "con hươu cao cổ", "con voi",
+            "con gấu trúc", "con hổ", "con cú mèo", "con sư tử",
+            "con ong mật", "con bướm", "con chuồn chuồn", "con chim cánh cụt"
+        ])
+
+        prompt = f"""Bạn là một nhà văn thiếu nhi và chuyên gia thiên nhiên. Hãy sáng tác một câu chuyện khám phá thiên nhiên hoàn toàn mới bằng tiếng Việt.
+
+CHỦ ĐỀ THIÊN NHIÊN:
+"{core_lesson}"
+
+NHÂN VẬT CHÍNH: **{animal_choice}**
+
+YÊU CẦU QUAN TRỌNG:
+1. Câu chuyện phải NGẮN GỌN, khoảng 600 đến 700 từ, đủ để đọc to trong khoảng 5-6 phút.
+2. CẤU TRÚC BẮT BUỘC — chia thành ĐÚNG 6 đoạn nội dung, mỗi đoạn ~100 từ:
+   - Đoạn 1: Chào mừng và bước vào thế giới thiên nhiên
+   - Đoạn 2: Phát hiện con vật ({animal_choice}) — mô tả ngoại hình sinh động
+   - Đoạn 3: Giải thích thói quen và đặc điểm của {animal_choice} (ăn gì, sống ở đâu)
+   - Đoạn 4: Một sự kiện thú vị hoặc hành vi đặc biệt của {animal_choice}
+   - Đoạn 5: Bài học thiên nhiên — tại sao {animal_choice} quan trọng cho hệ sinh thái
+   - Đoạn 6: Tạm biệt và lời nhắn nhủ yêu thiên nhiên
+3. Phong cách: VUI VẺ, tò mò, kích thích khám phá — KHÔNG buồn ngủ.
+4. Lồng ghép ít nhất 2 sự thật khoa học thú vị (fun facts) về {animal_choice}.
+5. TUYỆT ĐỐI KHÔNG dùng tên riêng. Dùng "nhà thám hiểm nhí", "bạn nhỏ".
+
+Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
+{{
+  "title": "Tên câu chuyện",
+  "animal": "{animal_choice}",
+  "story": "Nội dung đầy đủ của câu chuyện..."
+}}"""
+        
+        config = types.GenerateContentConfig(temperature=0.8)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config
+        )
+        
+        from shared.gemini_utils import extract_json
+        story_data = extract_json(response.text)
+        if not story_data:
+             raise ValueError("Ungültiges JSON von Gemini")
+
+        chapter_title = story_data.get("title", "Khám Phá Thiên Nhiên")
+        chapter_text = story_data.get("story", "")
+        animal = story_data.get("animal", animal_choice)
+        
+        if not chapter_text or len(chapter_text) < 200:
+            logger.error("❌ KI hat keine ausreichend lange Geschichte generiert.")
+            sys.exit(1)
+
+        word_count = len(chapter_text.split())
+        logger.info(f"✅ Natur-Geschichte generiert: '{chapter_title}' ({word_count} Wörter, {len(chapter_text)} Zeichen)")
+
+        logger.info("")
+        logger.info("💾 Ergebnis speichern...")
+        logger.info("-" * 40)
+
+        output = {
+            "title": chapter_title,
+            "description": core_lesson,
+            "solution": "",
+            "source": source_name,
+            "source_url": source_url,
+            "full_text": chapter_text,
+            "animal": animal,
+            "mode": "long",
+            "category": "natur",
+            "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
+        }
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
+        logger.info(f"✅ Gespeichert: {output_path}")
+
+        _save_to_history(output, mode="long_natur")
+        logger.info("")
+        logger.info("=" * 60)
+        logger.info("📋 ERGEBNIS (Natur)")
+        logger.info("=" * 60)
+        logger.info(f"   Titel:       {output['title']}")
+        logger.info(f"   Tier:        {output['animal']}")
+        logger.info(f"   Wörter:      {word_count}")
+        logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
+        logger.info("=" * 60)
+        return output
+
+    except Exception as e:
+        logger.error(f"❌ Fehler bei der KI-Generierung: {e}")
+        sys.exit(1)
+
+
+def _generate_schlaf_story(client, core_lesson: str, source_name: str, source_url: str):
+    """Generate a long bedtime story (2000-3500 words) — original schlaf logic."""
+    from google.genai import types
+    from trend_scout.config import GEMINI_MODEL
+
     logger.info("📖 Lasse KI eine neue Gute-Nacht-Geschichte erfinden (10-25 Min)...")
     logger.info("-" * 40)
 
@@ -399,6 +549,7 @@ Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn b
             "source_url": source_url,
             "full_text": chapter_text,
             "mode": "long",
+            "category": "schlaf",
             "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
         }
 

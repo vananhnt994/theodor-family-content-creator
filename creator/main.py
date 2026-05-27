@@ -79,8 +79,9 @@ def main():
     # Long-Form mode: text cleaning instead of voiceover generation
     # ------------------------------------------------------------------
     if thema.get("mode") == "long":
+        category = thema.get("category", "schlaf")
         logger.info("")
-        logger.info("📖 Long-Form Modus erkannt: Starte Text-Cleaner...")
+        logger.info(f"📖 Long-Form Modus erkannt (Kategorie: {category}): Starte Text-Cleaner...")
         logger.info("-" * 40)
 
         raw_text = thema.get("full_text", "")
@@ -88,7 +89,7 @@ def main():
             logger.error("❌ Pipeline abgebrochen: 'full_text' fehlt in thema.json")
             sys.exit(1)
 
-        cleaned = clean_book_text(raw_text)
+        cleaned = clean_book_text(raw_text, category=category)
         if not cleaned:
             logger.error("❌ Pipeline abgebrochen: Text-Bereinigung fehlgeschlagen")
             sys.exit(1)
@@ -96,6 +97,7 @@ def main():
         output = {
             "video_title": thema.get("title", ""),
             "mode": "long",
+            "category": category,
             "cleaned_text": cleaned["cleaned_text"],
             "word_count": cleaned["word_count"],
             "estimated_duration_minutes": cleaned["estimated_duration_minutes"],
@@ -108,6 +110,10 @@ def main():
             "generated_at": datetime.now(timezone.utc).astimezone().isoformat(),
         }
 
+        # Pass through animal info for natur category
+        if thema.get("animal"):
+            output["animal"] = thema["animal"]
+
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
         with open(output_path, "w", encoding="utf-8") as f:
@@ -119,6 +125,7 @@ def main():
         logger.info("📋 ERGEBNIS (Long-Form)")
         logger.info("=" * 60)
         logger.info(f"   Titel:       {output['video_title']}")
+        logger.info(f"   Kategorie:   {output['category']}")
         logger.info(f"   Wörter:      {output['word_count']}")
         logger.info(f"   Dauer ~:     {output['estimated_duration_minutes']} Min.")
         logger.info(f"   Generiert:   {output['generated_at']}")

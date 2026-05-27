@@ -14,6 +14,10 @@ python run_pipeline.py --channel betheo --artikel
 
 # Long-Form Pipeline (Gute Nacht Geschichten, liest PDF)
 python run_long_pipeline.py --channel betheo
+python run_long_pipeline.py --channel betheo --category schlaf  # explizit
+
+# Long-Form Pipeline (Natur erkunden, 6-Minuten-Video mit 6 Szenen)
+python run_long_pipeline.py --channel betheo --category natur
 
 # Upload-Pipeline (fertiges Video hochladen)
 python run_uploader.py --channel betheo
@@ -161,7 +165,32 @@ Generiert ein passendes Cover-Bild im Ghibli-Stil für das Hörspiel.
 Verbindet das Cover-Bild (Service 3A) und die Audiodatei (Service 3B) mittels FFmpeg zu einem fertigen Video mit sanftem Zoom-Effekt (Ken Burns).
 
 > [!NOTE]
-> **Aktueller Status für Long-Form:** Standardmäßig sind Service 3A (Cover-Bild) und Service 6 (Video-Editor) in `run_long_pipeline.py` deaktiviert, da das Hauptprodukt für Hörspiele eine reine Audiodatei und der zugehörige Text sind. Sie sind jedoch voll implementiert und können im Pipeline-Skript bei Bedarf durch einfaches Einkommentieren in der `services`-Liste aktiviert werden.
+> **Aktueller Status für Long-Form:** Standardmäßig sind Service 3A (Cover-Bild) und Service 6 (Video-Editor) in `run_long_pipeline.py` für die **Schlaf**-Kategorie deaktiviert, da das Hauptprodukt eine reine Audiodatei ist. Für die **Natur**-Kategorie sind sie automatisch aktiviert (6 Bilder + Video). Sie können im Pipeline-Skript bei Bedarf durch einfaches Einkommentieren in der `services`-Liste aktiviert/deaktiviert werden.
+
+### 🌿 Long-Form Kategorien: Schlafgeschichten vs. Natur-Wissen
+
+Die Long-Form Pipeline (`run_long_pipeline.py`) unterstützt zwei getrennte Content-Stränge, die über das `--category` Argument gesteuert werden.
+
+**Aufruf:**
+```bash
+python run_long_pipeline.py --channel betheo --category schlaf  # Standard
+python run_long_pipeline.py --channel betheo --category natur
+```
+
+**Kategorie-Unterschiede im Routing:**
+
+| Feature | Kategorie: Schlaf (`schlaf`) | Kategorie: Natur (`natur`) |
+| :--- | :--- | :--- |
+| **Input-Ordner (Service 0)** | `input/long/books/` | `input/long/books_natur/` |
+| **Dauer** | ~12 Minuten (Audio only) | **~6 Minuten (Video mit 6 Bildern)** |
+| **Szenen (Service 2)** | Keine (Fließtext) | 6 Szenen à 60s mit Bild+Video-Prompts |
+| **Inhaltlicher Fokus (Service 2)** | Beruhigend, monoton, Traumwelt | Edukativ, spannend, kindgerechte Biologie |
+| **Visueller Stil (Service 2)** | Ghibli 2D, peaceful, leichte Farben | Cute Ghibli 2D, hell, Natur, Tageslicht (16:9) |
+| **Sprach-Dynamik (Service 3B)** | Ruhig (stability 0.60) | Aufgeweckt (stability 0.50) |
+| **Stimme (Service 3B)** | Frau (Calm and Smooth) | Frau (Calm and Smooth) |
+| **Wort-Limit (Service 1)** | ~1.500 Wörter (12 Min. gestreckt) | ~700 Wörter (6 Min. normal) |
+| **Service 3A (Bilder)** | ❌ Deaktiviert | ✅ 6 Bilder (16:9 Querformat) |
+| **Service 6 (Video-Editor)** | ❌ Deaktiviert | ✅ Video aus 6 Bildern + Audio |
 
 ---
 

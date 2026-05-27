@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 BOOKS_DIR_SHORTS = os.path.join(BASE_DIR, "input", "shorts", "books")
-BOOKS_DIR_LONG   = os.path.join(BASE_DIR, "input", "long", "books")
+BOOKS_DIR_LONG       = os.path.join(BASE_DIR, "input", "long", "books")
+BOOKS_DIR_LONG_NATUR = os.path.join(BASE_DIR, "input", "long", "books_natur")
 
 
 
