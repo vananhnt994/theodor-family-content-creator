@@ -1,17 +1,23 @@
 """
-run_long_pipeline.py – Separate orchestrator for the Long-Form "Gute Nacht Geschichten" pipeline.
+run_long_pipeline.py – Separate orchestrator for the Long-Form pipeline.
+
+Supports two categories:
+  - schlaf (default): Gute Nacht Geschichten (audio only, ~12 min)
+  - natur: Natur erkunden (video with 6 scenes, ~6 min)
 
 Service chain:
   0. Librarian     → trend_scout  (PDF scan, sequential chapter pick)
   1. Text-Cleaner  → creator      (PDF artifact removal)
   2. Story-Critic  → art_director (LLM text optimization + cover prompt + voice rotation)
-  3A. Cover Image  → image_generator (1 image via Vertex AI)
+  3A. Cover Image  → image_generator (1 image via Vertex AI) [natur: 6 images]
   3B. Ton-Meister  → audio_generator (chunked ElevenLabs TTS, calm speed)
-  6. Video-Editor  → video_editor (FFmpeg Ken Burns zoom: image + audio → MP4)
+  6. Video-Editor  → video_editor (FFmpeg Ken Burns zoom: image + audio → MP4) [natur only]
   4. Archiver      → archiver     (ZIP + Drive upload + cleanup)
 
 Usage:
-    python run_long_pipeline.py --channel betheo
+    python run_long_pipeline.py --channel betheo                       # Schlafgeschichten (default)
+    python run_long_pipeline.py --channel betheo --category schlaf     # Explicit schlaf
+    python run_long_pipeline.py --channel betheo --category natur      # Natur erkunden
 """
 
 import subprocess
@@ -83,7 +89,11 @@ def _run_long_source(channel_file: str, mode: str = "book"):
         run_long_from_file(artikel_path)
     else:
         logger.info(f"\n{'='*50}")
-        logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
+        category = os.environ.get("THEODOR_LONG_CATEGORY", "schlaf")
+        if category == "natur":
+            logger.info("🌿 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books_natur/...")
+        else:
+            logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
         logger.info(f"{'='*50}")
         run_from_long_books()
 
@@ -97,6 +107,11 @@ def main():
         "--channel", type=str, default="betheo",
         help="Name des zu startenden Channels (ohne .json)."
     )
+    parser.add_argument(
+        "--category", type=str, default="schlaf",
+        choices=["schlaf", "natur"],
+        help="Long-Form Kategorie: 'schlaf' (Gute Nacht Geschichten) oder 'natur' (Natur erkunden)."
+    )
     parser.add_argument("--artikel", action="store_true", help="Liest input/shorts/artikel.txt als Basis für die Geschichte.")
     parser.add_argument("--book", action="store_true", help="Wählt ein Kapitel aus input/long/books/ als Basis (Standard).")
     args = parser.parse_args()
@@ -104,29 +119,48 @@ def main():
     channel_file = f"channels/{args.channel}.json"
     os.environ["THEODOR_CHANNEL_CONFIG"] = channel_file
     os.environ["THEODOR_PIPELINE_MODE"] = "long"
+    os.environ["THEODOR_LONG_CATEGORY"] = args.category
 
     logger.info("==================================================")
     logger.info(f"   📚 Theodorbot - Long-Form Pipeline [{args.channel}]")
-    logger.info("   Gute Nacht Geschichten — bis 12 Minuten")
+    if args.category == "natur":
+        logger.info("   🌿 Natur erkunden — ~6 Minuten (Video mit 6 Szenen)")
+    else:
+        logger.info("   😴 Gute Nacht Geschichten — bis 12 Minuten")
     logger.info("==================================================")
 
     # Service 0: Get the source and generate the base story
     mode = "artikel" if args.artikel else "book"
     _run_long_source(channel_file, mode=mode)
 
-    # Services 1–4
-    services = [
-        ("Service 1: Text-Cleaner",   "creator"),
-        ("Service 2: Story-Kritiker", "art_director"),
-        ("Service 3B: Ton-Meister",   "audio_generator"),
-        ("Service 4: Archiver",       "archiver"),
-    ]
+    # Build service chain based on category
+    if args.category == "natur":
+        # Natur: Hybrid pipeline with scenes, images, and video
+        services = [
+            ("Service 1: Text-Cleaner",   "creator"),
+            ("Service 2: Story-Kritiker", "art_director"),
+            ("Service 3A: Cover-Bild",    "image_generator"),
+            ("Service 3B: Ton-Meister",   "audio_generator"),
+            ("Service 6: Video-Editor",   "video_editor"),
+            ("Service 4: Archiver",       "archiver"),
+        ]
+    else:
+        # Schlaf: Audio-only pipeline (existing behavior)
+        services = [
+            ("Service 1: Text-Cleaner",   "creator"),
+            ("Service 2: Story-Kritiker", "art_director"),
+            ("Service 3B: Ton-Meister",   "audio_generator"),
+            ("Service 4: Archiver",       "archiver"),
+        ]
 
     for name, module in services:
         run_service(name, module)
 
     logger.info("🎉 Long-Form Pipeline erfolgreich abgeschlossen!")
-    logger.info("Die Dateien (Audio & Text) sollten jetzt auf Google Drive verfügbar sein.")
+    if args.category == "natur":
+        logger.info("Das Video und die Dateien sollten jetzt auf Google Drive verfügbar sein.")
+    else:
+        logger.info("Die Dateien (Audio & Text) sollten jetzt auf Google Drive verfügbar sein.")
 
 
 if __name__ == "__main__":

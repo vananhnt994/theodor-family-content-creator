@@ -102,3 +102,66 @@ RULES:
 
 8. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
 """
+
+# ---------------------------------------------------------------------------
+# Long-Form Natur-Critic Prompt (category: natur)
+# ---------------------------------------------------------------------------
+LONG_FORM_NATUR_CRITIC_PROMPT = """
+You are an expert children's nature documentary editor for Vietnamese families.
+Your task is to optimize a raw text about nature/animals so it sounds engaging,
+educational, and fun when read aloud — like a nature exploration show for kids.
+
+RULES:
+1. PRESERVE THE CONTENT: Keep all facts and educational value. Do NOT invent new facts.
+2. TONE: Excited, curious, playful — NOT sleepy. This is daytime discovery, not bedtime!
+3. STRUCTURE: Organize the text into exactly 6 clear content blocks (~100 words each).
+   Separate each block with a blank line for clarity.
+4. ENRICHMENT: Add fun animal comparisons and "did you know?" moments where natural.
+5. NO REAL NAMES: Use roles like "nhà thám hiểm nhí", "bạn nhỏ".
+6. PAUSES: Insert <break time="1.0s" /> at natural transitions between blocks (5 times).
+7. CHILD-FRIENDLY LANGUAGE: Replace overly academic words with simpler, warmer alternatives.
+8. LENGTH: The final text MUST be between 600 and 700 words. Cut or expand as needed.
+9. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
+"""
+
+# ---------------------------------------------------------------------------
+# Long-Form Natur Scene-Split Prompt (category: natur)
+# ---------------------------------------------------------------------------
+LONG_FORM_NATUR_SCENE_SPLIT_PROMPT = """Teile das folgende Natur-Skript in exakt 6 inhaltliche Abschnitte auf.
+
+Für JEDEN Abschnitt schreibe:
+1. "voiceover_text": Der exakte Textabschnitt aus dem Skript
+2. "duration_seconds": 60
+3. "emotion": Die Emotion dieses Abschnitts (z.B. "curious", "excited", "amazed", "playful", "thoughtful", "warm")
+4. "bild_prompt": Ein ENGLISCHER Bild-Prompt im Cute Ghibli 2D Stil für 16:9 Querformat.
+   STIL-REGELN (MANDATORY):
+   - Starte JEDEN Prompt mit: "flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, lush nature colors, soft watercolor textures, 16:9 landscape format."
+   - Beschreibe das Tier mit großen ausdrucksvollen Augen, niedlich und kindgerecht.
+   - Hintergründe: Lebendige, helle Natur — Wald, Wiese, Fluss, Sonnenlicht durch Blätter.
+   - VERBOTEN: Fotografie, 3D, Realismus, dunkle Farben, Nacht-Szenen.
+   - Verwende KONSISTENTE Tier-Beschreibung in JEDEM Prompt (gleiche Farbe, Größe, Merkmale).
+5. "video_prompt": Ein DETAILLIERTER ENGLISCHER Video-Prompt (max 30 Wörter) der die BEWEGUNG und das VERHALTEN des Tieres in diesem Abschnitt beschreibt.
+   Beispiel: "Curious squirrel jumps between oak branches, collecting acorns, fluffy tail bouncing, soft dappled sunlight filtering through green canopy, gentle breeze."
+
+SZENEN-VORGABE:
+- Szene 1: Begrüßung und Eintritt in die Naturwelt
+- Szene 2: Entdeckung des Tieres — Aussehen und erste Begegnung
+- Szene 3: Gewohnheiten und Eigenschaften des Tieres
+- Szene 4: Besonderes Verhalten oder überraschendes Fun Fact
+- Szene 5: Warum ist das Tier wichtig für die Natur?
+- Szene 6: Verabschiedung und Botschaft
+
+Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
+{
+  "scenes": [
+    {
+      "scene_number": 1,
+      "voiceover_text": "...",
+      "duration_seconds": 60,
+      "emotion": "...",
+      "bild_prompt": "...",
+      "video_prompt": "..."
+    }
+  ]
+}
+"""

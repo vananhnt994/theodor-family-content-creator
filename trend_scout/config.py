@@ -96,5 +96,6 @@ OUTPUT_DIR = "output"
 OUTPUT_FILENAME = "thema.json"
 HISTORY_SHORTS_FILENAME = "historie_shorts.json"
 HISTORY_LONG_FILENAME = "historie_long.json"
+HISTORY_LONG_NATUR_FILENAME = "historie_long_natur.json"
 # Legacy alias (used by existing shorts pipeline)
 HISTORY_FILENAME = HISTORY_SHORTS_FILENAME

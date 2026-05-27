@@ -105,6 +105,136 @@ Input Text:
     return optimized_text, selected_voice
 
 
+def _run_long_form_natur(data: dict, env_path: str):
+    """Handle the Long-Form Natur pipeline: text optimization + 6-scene split with image/video prompts."""
+    from google.genai import types
+    from art_director.config import (
+        LONG_FORM_NATUR_CRITIC_PROMPT,
+        LONG_FORM_NATUR_SCENE_SPLIT_PROMPT,
+        GEMINI_MODEL
+    )
+
+    client = create_client()
+
+    cleaned_text = data.get("cleaned_text", "")
+    video_title = data.get("video_title", "Unbekannt")
+    animal = data.get("animal", "")
+
+    logger.info(f"🌿 Starte Natur-Kritiker für: '{video_title}'")
+    logger.info(f"   Tier: {animal}")
+    logger.info(f"   Textlänge: {len(cleaned_text)} Zeichen")
+
+    # Step 1: Optimize text for nature narration
+    logger.info("✍️  Gemini optimiert den Text für Natur-Entdeckung...")
+    try:
+        config = types.GenerateContentConfig(
+            system_instruction=LONG_FORM_NATUR_CRITIC_PROMPT,
+            temperature=0.5,
+            max_output_tokens=4096,
+        )
+
+        prompt = f"""Optimize this Vietnamese nature exploration text.
+CRITICAL REQUIREMENTS:
+1. Make it sound exciting, curious, and playful — like a nature documentary for kids.
+2. Organize into exactly 6 content blocks, each ~100 words.
+3. Keep all factual content about the animal: {animal}
+4. Final length: 600-700 words.
+
+Input Text:
+{cleaned_text}"""
+
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=config
+        )
+        if response.candidates:
+            optimized_text = response.text.strip()
+            logger.info(f"✓ Text optimiert ({len(optimized_text)} Zeichen).")
+        else:
+            logger.warning("⚠ Gemini hat nichts zurückgegeben – verwende Originaltext.")
+            optimized_text = cleaned_text
+    except Exception as e:
+        logger.warning(f"⚠ Fehler beim Natur-Kritiker: {e}. Nutze Originaltext.")
+        optimized_text = cleaned_text
+
+    # Step 2: Scene-Split with image + video prompts
+    logger.info("")
+    logger.info("🎬 Schritt 2: Szenen-Split mit Bild+Video-Prompts (6 Szenen)...")
+    logger.info("-" * 40)
+
+    try:
+        scene_prompt = f"""{LONG_FORM_NATUR_SCENE_SPLIT_PROMPT}
+
+TIER IM FOKUS: {animal}
+Verwende KONSISTENTE Beschreibung für {animal} in JEDEM bild_prompt und video_prompt.
+
+NATUR-SKRIPT:
+{optimized_text}"""
+
+        scene_config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.4,
+            safety_settings=SAFETY_SETTINGS_NONE,
+        )
+
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=scene_prompt,
+            config=scene_config,
+        )
+
+        if not response.candidates:
+            logger.error("⚠ Gemini hat den Scene-Split blockiert.")
+            raise ValueError("Scene split blocked by content filter")
+
+        from shared.gemini_utils import extract_json
+        result = extract_json(response.text)
+        if not result or "scenes" not in result:
+            raise ValueError(f"JSON-Parse fehlgeschlagen: {response.text[:200]}")
+
+        scenes = result["scenes"]
+
+        # Validate and clean scenes
+        valid_scenes = []
+        for i, scene in enumerate(scenes):
+            scene["scene_number"] = i + 1
+            scene["duration_seconds"] = scene.get("duration_seconds", 60)
+            if "bild_prompt" not in scene:
+                scene["bild_prompt"] = f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format."
+            if "video_prompt" not in scene:
+                scene["video_prompt"] = f"Gentle {animal} moving through sunlit forest, soft breeze, peaceful nature atmosphere."
+            valid_scenes.append(scene)
+
+        logger.info(f"✓ {len(valid_scenes)} Szenen mit Bild+Video-Prompts generiert.")
+        for s in valid_scenes:
+            logger.info(f"  🎞 Szene {s['scene_number']}: {s.get('emotion', '?')} | {s['voiceover_text'][:50]}...")
+
+    except Exception as e:
+        logger.error(f"⚠ Fehler beim Scene-Split: {e}. Erstelle Fallback-Szenen.")
+        # Fallback: split text into 6 equal parts
+        words = optimized_text.split()
+        chunk_size = max(1, len(words) // 6)
+        valid_scenes = []
+        for i in range(6):
+            start = i * chunk_size
+            end = start + chunk_size if i < 5 else len(words)
+            scene_text = " ".join(words[start:end])
+            valid_scenes.append({
+                "scene_number": i + 1,
+                "voiceover_text": scene_text,
+                "duration_seconds": 60,
+                "emotion": "curious",
+                "bild_prompt": f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format.",
+                "video_prompt": f"Gentle {animal} exploring nature, soft breeze, peaceful forest atmosphere.",
+            })
+
+    selected_voice = "Frau"
+    logger.info(f"🎙️  Gewählte Stimme: {selected_voice}")
+
+    return optimized_text, selected_voice, valid_scenes
+
+
 def main():
     env_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(env_path)
@@ -131,12 +261,20 @@ def main():
     # Long-Form mode: Story Critic + 1 cover image + voice rotation
     # ----------------------------------------------------------------
     if data.get("mode") == "long":
-        logger.info("📖 Long-Form Modus: Story-Kritiker aktiv...")
+        category = data.get("category", "schlaf")
+        logger.info(f"📖 Long-Form Modus (Kategorie: {category})...")
 
-        optimized_text, selected_voice = _run_long_form(data, env_path)
+        if category == "natur":
+            optimized_text, selected_voice, scenes = _run_long_form_natur(data, env_path)
+            data["optimized_text"] = optimized_text
+            data["selected_voice"] = selected_voice
+            data["scenes"] = scenes
+            data["scene_count"] = len(scenes)
+        else:
+            optimized_text, selected_voice = _run_long_form(data, env_path)
+            data["optimized_text"] = optimized_text
+            data["selected_voice"] = selected_voice
 
-        data["optimized_text"] = optimized_text
-        data["selected_voice"] = selected_voice
         data["art_director_checked_at"] = datetime.now().isoformat()
 
         os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -145,6 +283,8 @@ def main():
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         logger.info(f"✓ Long-Form Ausgabe gespeichert: {out_path}")
+        if category == "natur":
+            logger.info(f"  📸 {len(scenes)} Szenen mit Bild+Video-Prompts generiert.")
         return
 
     # ----------------------------------------------------------------

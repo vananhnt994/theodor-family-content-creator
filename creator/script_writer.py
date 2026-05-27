@@ -219,7 +219,7 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
     return None
 
 
-def clean_book_text(raw_text: str) -> dict | None:
+def clean_book_text(raw_text: str, category: str = "schlaf") -> dict | None:
     """
     Long-Form mode: Clean raw PDF text for use as a read-aloud voiceover.
     Removes PDF artifacts (page numbers, headers, broken line breaks) without
@@ -227,6 +227,7 @@ def clean_book_text(raw_text: str) -> dict | None:
 
     Args:
         raw_text: Raw text extracted from a PDF chapter.
+        category: 'schlaf' (default, no word limit) or 'natur' (hard 700-word cap).
 
     Returns:
         Dict with 'cleaned_text', 'word_count', 'estimated_duration_minutes',
@@ -258,11 +259,23 @@ def clean_book_text(raw_text: str) -> dict | None:
     text = "\n".join(line.rstrip() for line in text.splitlines())
     text = text.strip()
 
-    # Stats — average warm narration ~130 words/min
     word_count = len(text.split())
-    estimated_minutes = round(word_count / 130, 1)
 
-    logger.info(f"[Creator/Long] ✓ Text bereinigt: {word_count} Wörter (~{estimated_minutes} Min.)")
+    # Category-specific word limit & speed estimate
+    if category == "natur":
+        NATUR_WORD_LIMIT = 700
+        if word_count > NATUR_WORD_LIMIT:
+            logger.warning(f"[Creator/Long-Natur] ⚠ Text hat {word_count} Wörter — kürze auf {NATUR_WORD_LIMIT} Wörter.")
+            words = text.split()
+            text = " ".join(words[:NATUR_WORD_LIMIT])
+            word_count = NATUR_WORD_LIMIT
+        # Normal speaking speed ~120 words/min
+        estimated_minutes = round(word_count / 120, 1)
+    else:
+        # Warm, slow narration ~130 words/min
+        estimated_minutes = round(word_count / 130, 1)
+
+    logger.info(f"[Creator/Long] ✓ Text bereinigt: {word_count} Wörter (~{estimated_minutes} Min.) [Kategorie: {category}]")
     logger.info(f"[Creator/Long]   Vorschau: {text[:120]}...")
 
     return {
