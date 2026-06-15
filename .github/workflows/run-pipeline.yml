@@ -61,7 +61,17 @@ jobs:
 
       - name: 🚀 Pipeline starten
         run: |
-          MODE="${{ github.event.inputs.mode || 'default' }}"
+          MODE="${{ github.event.inputs.mode }}"
+          
+          # Wenn automatisch über Schedule gestartet, ermittle Modus basierend auf Wochentag
+          if [ -z "$MODE" ]; then
+            DAY_OF_WEEK=$(date +%u)
+            if [ "$DAY_OF_WEEK" = "2" ]; then
+              MODE="book"
+            else
+              MODE="default"
+            fi
+          fi
           
           if [ "$MODE" = "book" ]; then
             echo "📚 Starte Pipeline im Buch-Modus..."
