@@ -269,28 +269,110 @@ def run_from_books():
     return output
 
 
+# ---------------------------------------------------------------------------
+# Animal Pool for Natur category — with family-based dedup
+# ---------------------------------------------------------------------------
+ANIMAL_POOL = [
+    {"name": "gấu trúc đáng yêu", "family": "bär", "label": "Gấu trúc"},
+    {"name": "chim đại bàng", "family": "adler", "label": "Đại bàng"},
+    {"name": "cá heo thông minh", "family": "delphin", "label": "Cá heo"},
+    {"name": "hươu cao cổ", "family": "giraffe", "label": "Hươu cao cổ"},
+    {"name": "voi châu Phi", "family": "elefant", "label": "Voi"},
+    {"name": "hổ dũng mãnh", "family": "tiger", "label": "Hổ"},
+    {"name": "cú mèo tinh anh", "family": "eule", "label": "Cú mèo"},
+    {"name": "sư tử kiêu hãnh", "family": "löwe", "label": "Sư tử"},
+    {"name": "ong mật chăm chỉ", "family": "biene", "label": "Ong mật"},
+    {"name": "bướm xinh đẹp", "family": "schmetterling", "label": "Bướm"},
+    {"name": "rùa biển", "family": "schildkröte", "label": "Rùa biển"},
+    {"name": "chim cánh cụt", "family": "pinguin", "label": "Chim cánh cụt"},
+    {"name": "cá voi lưng gù", "family": "wal", "label": "Cá voi"},
+    {"name": "sói xám", "family": "wolf", "label": "Sói"},
+    {"name": "báo đốm", "family": "leopard", "label": "Báo đốm"},
+    {"name": "gấu Bắc Cực", "family": "eisbär", "label": "Gấu Bắc Cực"},
+    {"name": "chim hồng hạc", "family": "flamingo", "label": "Hồng hạc"},
+    {"name": "cá ngựa", "family": "seepferdchen", "label": "Cá ngựa"},
+    {"name": "tắc kè hoa", "family": "chamäleon", "label": "Tắc kè hoa"},
+    {"name": "đại bàng đầu trắng", "family": "adler", "label": "Đại bàng đầu trắng"},
+    {"name": "koala", "family": "koala", "label": "Koala"},
+    {"name": "kanguru", "family": "känguru", "label": "Kanguru"},
+    {"name": "chim ruồi", "family": "kolibri", "label": "Chim ruồi"},
+    {"name": "bạch tuộc", "family": "oktopus", "label": "Bạch tuộc"},
+    {"name": "tuần lộc", "family": "rentier", "label": "Tuần lộc"},
+    {"name": "cáo đỏ", "family": "fuchs", "label": "Cáo đỏ"},
+    {"name": "gấu nâu", "family": "bär", "label": "Gấu nâu"},
+    {"name": "cá mập trắng", "family": "hai", "label": "Cá mập"},
+    {"name": "vẹt đuôi dài", "family": "papagei", "label": "Vẹt"},
+    {"name": "chim bồ câu", "family": "taube", "label": "Bồ câu"},
+]
+
+
+def _pick_animal_from_pool(history: list[dict]) -> dict:
+    """Pick an animal from ANIMAL_POOL, avoiding families already used in history."""
+    import random
+
+    used_families = set()
+    for entry in history:
+        family = entry.get("animal_family", "")
+        if family:
+            used_families.add(family)
+
+    available = [a for a in ANIMAL_POOL if a["family"] not in used_families]
+
+    if not available:
+        logger.warning("⚠ Alle Tier-Familien wurden bereits verwendet. Pool wird zurückgesetzt.")
+        available = ANIMAL_POOL
+
+    chosen = random.choice(available)
+    logger.info(f"🐾 Tier gewählt: {chosen['label']} (Familie: {chosen['family']})")
+    logger.info(f"   Verfügbar: {len(available)}/{len(ANIMAL_POOL)} Tiere | Bereits verwendet: {len(used_families)} Familien")
+    return chosen
+
+
+def run_natur_direct():
+    """Direct KI-driven nature content generation — no PDF books needed.
+    
+    Picks an animal from the pool (avoiding recent families via history),
+    then generates a ~7-minute nature exploration story.
+    """
+    logger.info("=" * 60)
+    logger.info("🌿 SERVICE 0: NATUR-GENERATOR (Direkte KI-Generierung)")
+    logger.info("=" * 60)
+
+    if not check_connection():
+        logger.error("❌ Pipeline abgebrochen: API Fehler")
+        sys.exit(1)
+
+    # Pick animal with family-based dedup
+    history = _load_history(mode="long_natur")
+    chosen = _pick_animal_from_pool(history)
+
+    from google import genai
+    from google.genai import types
+    from trend_scout.config import GEMINI_MODEL
+
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+
+    # Short topic extraction for the chosen animal
+    core_lesson = f"Khám phá cuộc sống kỳ thú của {chosen['name']} trong thiên nhiên hoang dã."
+
+    return _generate_natur_story(
+        client, core_lesson,
+        source_name="Direkte KI-Generierung",
+        source_url="direct_ai",
+        chosen_animal=chosen
+    )
+
+
 def run_from_long_books():
-    """Librarian mode: Picks a chapter from input/long/books/ (or books_natur/) and tells a story."""
-    category = os.environ.get("THEODOR_LONG_CATEGORY", "schlaf")
-    
+    """Librarian mode: Picks a chapter from input/long/books/ and tells a bedtime story."""
     logger.info("=" * 60)
-    if category == "natur":
-        logger.info("🌿 SERVICE 0: LIBRARIAN (Long-Form Natur-Modus)")
-    else:
-        logger.info("📚 SERVICE 0: LIBRARIAN (Long-Form Buch-Modus)")
+    logger.info("📚 SERVICE 0: LIBRARIAN (Long-Form Buch-Modus)")
     logger.info("=" * 60)
 
-    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_LONG, BOOKS_DIR_LONG_NATUR
+    from trend_scout.book_reader import run_book_reader, BOOKS_DIR_LONG
 
-    if category == "natur":
-        books_dir = BOOKS_DIR_LONG_NATUR
-        history_mode = "long_natur"
-    else:
-        books_dir = BOOKS_DIR_LONG
-        history_mode = "long"
-    
-    history = _load_history(mode=history_mode)
-    book_data = run_book_reader(history, books_dir=books_dir, sequential=True, check_story=False)
+    history = _load_history(mode="long")
+    book_data = run_book_reader(history, books_dir=BOOKS_DIR_LONG, sequential=True, check_story=False)
     
     if not book_data:
         sys.exit(1)
@@ -299,7 +381,7 @@ def run_from_long_books():
         source_text=book_data["text"], 
         source_name=book_data["book_filename"], 
         source_url=book_data["chapter_id"],
-        category=category
+        category="schlaf"
     )
 
 
@@ -374,48 +456,76 @@ Trả lời ngắn gọn (1-2 câu) bằng tiếng Việt."""
         return _generate_schlaf_story(client, core_lesson, source_name, source_url)
 
 
-def _generate_natur_story(client, core_lesson: str, source_name: str, source_url: str):
-    """Generate a ~700-word nature exploration story with 6 content blocks."""
+def _generate_natur_story(client, core_lesson: str, source_name: str, source_url: str, chosen_animal: dict = None):
+    """Generate a ~800-word nature exploration story with 6 content blocks matching the 7-minute video structure.
+    
+    Args:
+        chosen_animal: Dict with 'name', 'family', 'label' from ANIMAL_POOL.
+                       If None, falls back to random selection (legacy).
+    """
     from google.genai import types
     from trend_scout.config import GEMINI_MODEL
 
-    logger.info("🌿 Lasse KI eine Natur-Entdeckungsgeschichte erfinden (~6 Min)...")
+    logger.info("🌿 Lasse KI eine Natur-Entdeckungsgeschichte erfinden (~7 Min)...")
     logger.info("-" * 40)
 
     try:
         import random
-        animal_choice = random.choice([
-            "con sóc", "con nai", "con cáo", "con gấu", "con thỏ", "con rùa",
-            "con chim đại bàng", "con cá heo", "con hươu cao cổ", "con voi",
-            "con gấu trúc", "con hổ", "con cú mèo", "con sư tử",
-            "con ong mật", "con bướm", "con chuồn chuồn", "con chim cánh cụt"
-        ])
 
-        prompt = f"""Bạn là một nhà văn thiếu nhi và chuyên gia thiên nhiên. Hãy sáng tác một câu chuyện khám phá thiên nhiên hoàn toàn mới bằng tiếng Việt.
+        if chosen_animal:
+            animal_choice = chosen_animal["name"]
+            animal_family = chosen_animal["family"]
+            animal_label = chosen_animal["label"]
+        else:
+            # Legacy fallback
+            animal_choice = random.choice([a["name"] for a in ANIMAL_POOL])
+            animal_family = next((a["family"] for a in ANIMAL_POOL if a["name"] == animal_choice), "unbekannt")
+            animal_label = animal_choice
 
-CHỦ ĐỀ THIÊN NHIÊN:
+        prompt = f"""Bạn là một nhà văn thiếu nhi xuất sắc và một nhà sinh vật học truyền cảm hứng. Hãy sáng tác một câu chuyện/kịch bản khám phá thiên nhiên hoàn toàn mới bằng tiếng Việt, khơi gợi trí tò mò của trẻ em.
+
+CHỦ ĐỀ THIÊN NHIÊN CHÍNH:
 "{core_lesson}"
 
 NHÂN VẬT CHÍNH: **{animal_choice}**
 
-YÊU CẦU QUAN TRỌNG:
-1. Câu chuyện phải NGẮN GỌN, khoảng 600 đến 700 từ, đủ để đọc to trong khoảng 5-6 phút.
-2. CẤU TRÚC BẮT BUỘC — chia thành ĐÚNG 6 đoạn nội dung, mỗi đoạn ~100 từ:
-   - Đoạn 1: Chào mừng và bước vào thế giới thiên nhiên
-   - Đoạn 2: Phát hiện con vật ({animal_choice}) — mô tả ngoại hình sinh động
-   - Đoạn 3: Giải thích thói quen và đặc điểm của {animal_choice} (ăn gì, sống ở đâu)
-   - Đoạn 4: Một sự kiện thú vị hoặc hành vi đặc biệt của {animal_choice}
-   - Đoạn 5: Bài học thiên nhiên — tại sao {animal_choice} quan trọng cho hệ sinh thái
-   - Đoạn 6: Tạm biệt và lời nhắn nhủ yêu thiên nhiên
-3. Phong cách: VUI VẺ, tò mò, kích thích khám phá — KHÔNG buồn ngủ.
-4. Lồng ghép ít nhất 2 sự thật khoa học thú vị (fun facts) về {animal_choice}.
-5. TUYỆT ĐỐI KHÔNG dùng tên riêng. Dùng "nhà thám hiểm nhí", "bạn nhỏ".
+YÊU CẦU CẤU TRÚC KỊCH BẢN CHI TIẾT (BẮT BUỘC):
+Kịch bản phải được chia thành ĐÚNG 6 đoạn nội dung tương ứng với 6 phần sau đây (tổng cộng khoảng 680 đến 780 từ, cho video 7 phút):
+
+1. **Phần 1 — Khởi đầu đầy lôi cuốn (Starker Einstieg)** (Độ dài: ~60 từ, cho khoảng 40 giây nói):
+   - Mục tiêu: Thu hút sự chú ý ngay lập tức.
+   - Nội dung: Đặt một câu hỏi bất ngờ hoặc một sự thật thú vị về {animal_choice}, giải thích lý do loài động vật này thú vị, giới thiệu nhanh về nội dung câu chuyện hôm nay.
+
+2. **Phần 2 — Nơi sinh sống của loài vật (Lebensraum der Tiere)** (Độ dài: ~100 từ, cho khoảng 60 giây nói):
+   - Mục tiêu: Giới thiệu môi trường sống của {animal_choice}.
+   - Nội dung: Rừng hoang dã, đại dương bao la, sa mạc hay rừng nhiệt đới; cách {animal_choice} thích nghi đặc biệt với môi trường đó; tầm quan trọng của môi trường sống này.
+
+3. **Phần 3 — Khả năng đặc biệt thú vị (Interessante Fähigkeiten der Tiere)** (Độ dài: ~100 từ, cho khoảng 60 giây nói):
+   - Mục tiêu: Khiến người xem ngạc nhiên và thán phục.
+   - Nội dung: Tốc độ, ngụy trang, kỹ năng sinh tồn đặc biệt, hoặc cách giao tiếp độc đáo của {animal_choice}. Lồng ghép sự thật khoa học ấn tượng.
+
+4. **Phần 4 — Cuộc sống thường ngày (Das tägliche Leben der Tiere)** (Độ dài: ~120 từ, cho khoảng 70 giây nói):
+   - Mục tiêu: Giới thiệu cuộc sống đời thường, tạo cảm giác gần gũi, ấm áp.
+   - Nội dung: Cách kiếm thức ăn, tập tính ngủ nghỉ, tình cảm bầy đàn gia đình, cách bảo vệ con non của {animal_choice}.
+
+5. **Phần 5 — Mối đe dọa & Bảo tồn thiên nhiên (Gefahren & Naturschutz)** (Độ dài: ~140 từ, cho khoảng 90 giây nói):
+   - Mục tiêu: Tạo sự kết nối cảm xúc và ý thức trách nhiệm.
+   - Nội dung: Các nguy cơ thực tế (mất môi trường sống, biến đổi khí hậu...), tại sao {animal_choice} quan trọng cho sự cân bằng hệ sinh thái, cách chúng ta có thể bảo vệ chúng.
+
+6. **Phần 6 — Lời kết & Thông điệp truyền cảm hứng (Abschluss & starke Botschaft)** (Độ dài: ~160 từ, cho khoảng 100 giây nói):
+   - Mục tiêu: Kết thúc tươi đẹp và truyền động lực.
+   - Nội dung: Tóm tắt ngắn gọn điều kỳ diệu nhất vừa khám phá, thông điệp bảo vệ thiên nhiên. Đặt câu hỏi tương tác thú vị cho người xem, kêu gọi Like và Đăng ký (Subscribe) kênh để đón chờ bài học sau.
+
+PHONG CÁCH VIẾT:
+- Giọng văn: Vui vẻ, hào hứng, giàu tò mò, đầy năng lượng (hoàn toàn KHÔNG phải truyện ru ngủ).
+- Cách xưng hô: Dùng các từ thân thiện như "các nhà thám hiểm nhí", "chúng ta", "bạn nhỏ". Tuyệt đối không dùng tên riêng.
+- Khoa học và chính xác: Lồng ghép ít nhất 2 sự thật khoa học thú vị và chính xác về {animal_choice}.
 
 Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn bản nào bên ngoài JSON):
 {{
-  "title": "Tên câu chuyện",
+  "title": "Tên kịch bản khám phá thiên nhiên cực kỳ hấp dẫn",
   "animal": "{animal_choice}",
-  "story": "Nội dung đầy đủ của câu chuyện..."
+  "story": "Nối liền cả 6 phần trên thành một văn bản hoàn chỉnh, mỗi phần phân tách bằng đúng một dòng trống và bắt đầu bằng thẻ Phần 1, Phần 2, v.v."
 }}"""
         
         config = types.GenerateContentConfig(temperature=0.8)
@@ -453,6 +563,7 @@ Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn b
             "source_url": source_url,
             "full_text": chapter_text,
             "animal": animal,
+            "animal_family": animal_family,
             "mode": "long",
             "category": "natur",
             "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
@@ -470,7 +581,7 @@ Trả lời bằng JSON với định dạng sau (không thêm bất kỳ văn b
         logger.info("📋 ERGEBNIS (Natur)")
         logger.info("=" * 60)
         logger.info(f"   Titel:       {output['title']}")
-        logger.info(f"   Tier:        {output['animal']}")
+        logger.info(f"   Tier:        {output['animal']} (Familie: {animal_family})")
         logger.info(f"   Wörter:      {word_count}")
         logger.info(f"   Textlänge:   {len(output['full_text'])} Zeichen")
         logger.info("=" * 60)
