@@ -68,7 +68,7 @@ def run_service(name: str, module_path: str):
 
 
 def _run_long_source(channel_file: str, mode: str = "book"):
-    """Run Service 0 for Long-Form (Librarian or Article mode)."""
+    """Run Service 0 for Long-Form (Librarian, Article, or Natur-Direct mode)."""
     if os.path.exists("output/thema.json"):
         logger.info(f"\n{'='*50}")
         logger.info("⏭  Überspringe Service 0: 'output/thema.json' existiert bereits.")
@@ -78,27 +78,33 @@ def _run_long_source(channel_file: str, mode: str = "book"):
     start_time = time.time()
     os.environ["THEODOR_CHANNEL_CONFIG"] = channel_file
     os.environ["THEODOR_PIPELINE_MODE"] = "long"
-    
-    from trend_scout.main import run_from_long_books, run_long_from_file
 
-    if mode == "artikel":
+    category = os.environ.get("THEODOR_LONG_CATEGORY", "schlaf")
+
+    if category == "natur":
+        # Natur: Direct KI generation — no book reader
+        logger.info(f"\n{'='*50}")
+        logger.info("🌿 Natur-Modus: KI generiert direkt eine neue Tiergeschichte...")
+        logger.info(f"{'='*50}")
+        from trend_scout.main import run_natur_direct
+        run_natur_direct()
+    elif mode == "artikel":
+        from trend_scout.main import run_from_long_books, run_long_from_file
         artikel_path = os.path.join("input", "shorts", "artikel.txt")
         logger.info(f"\n{'='*50}")
         logger.info(f"📝 Artikel-Storyteller: Lese '{artikel_path}'...")
         logger.info(f"{'='*50}")
         run_long_from_file(artikel_path)
     else:
+        from trend_scout.main import run_from_long_books
         logger.info(f"\n{'='*50}")
-        category = os.environ.get("THEODOR_LONG_CATEGORY", "schlaf")
-        if category == "natur":
-            logger.info("🌿 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books_natur/...")
-        else:
-            logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
+        logger.info("📚 Librarian-Modus: Wähle nächstes Kapitel aus input/long/books/...")
         logger.info(f"{'='*50}")
         run_from_long_books()
 
     duration = time.time() - start_time
     logger.info(f"✅ Service 0 erfolgreich in {duration:.1f} Sekunden.\n")
+
 
 
 def main():
@@ -124,7 +130,7 @@ def main():
     logger.info("==================================================")
     logger.info(f"   📚 Theodorbot - Long-Form Pipeline [{args.channel}]")
     if args.category == "natur":
-        logger.info("   🌿 Natur erkunden — ~6 Minuten (Video mit 6 Szenen)")
+        logger.info("   🌿 Natur erkunden — ~7 Minuten (Video mit 6 Szenen)")
     else:
         logger.info("   😴 Gute Nacht Geschichten — bis 12 Minuten")
     logger.info("==================================================")
@@ -135,21 +141,19 @@ def main():
 
     # Build service chain based on category
     if args.category == "natur":
-        # Natur: Hybrid pipeline with scenes, images, and video
+        # Natur: Hybrid pipeline with scenes and images (video editor removed by user request)
         services = [
             ("Service 1: Text-Cleaner",   "creator"),
             ("Service 2: Story-Kritiker", "art_director"),
             ("Service 3A: Cover-Bild",    "image_generator"),
             ("Service 3B: Ton-Meister",   "audio_generator"),
-            ("Service 6: Video-Editor",   "video_editor"),
             ("Service 4: Archiver",       "archiver"),
         ]
     else:
-        # Schlaf: Audio-only pipeline (existing behavior)
+        # Schlaf: Text-only pipeline (audio generation disabled)
         services = [
             ("Service 1: Text-Cleaner",   "creator"),
             ("Service 2: Story-Kritiker", "art_director"),
-            ("Service 3B: Ton-Meister",   "audio_generator"),
             ("Service 4: Archiver",       "archiver"),
         ]
 
@@ -157,10 +161,7 @@ def main():
         run_service(name, module)
 
     logger.info("🎉 Long-Form Pipeline erfolgreich abgeschlossen!")
-    if args.category == "natur":
-        logger.info("Das Video und die Dateien sollten jetzt auf Google Drive verfügbar sein.")
-    else:
-        logger.info("Die Dateien (Audio & Text) sollten jetzt auf Google Drive verfügbar sein.")
+    logger.info("Die Dateien sollten jetzt auf Google Drive verfügbar sein.")
 
 
 if __name__ == "__main__":
