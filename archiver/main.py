@@ -109,6 +109,70 @@ def cleanup_output_dir():
                     logger.warning(f"⚠ Konnte {file} nicht löschen: {e}")
     logger.info("✓ Ordner bereinigt.")
 
+def generate_seo_metadata(data: dict) -> dict:
+    """
+    Generate SEO metadata (title, description with 5-6 sentence summary, tags) using Gemini.
+    """
+    try:
+        from shared.gemini_utils import create_client, SAFETY_SETTINGS_NONE, extract_json
+        from google.genai import types
+        
+        client = create_client()
+        
+        mode = data.get("mode", "shorts")
+        category = data.get("category", "default")
+        
+        if mode == "long":
+            full_text = data.get("optimized_text") or data.get("cleaned_text") or ""
+        else:
+            scenes = data.get("scenes", [])
+            full_text = " ".join([s.get("voiceover_text", "") for s in scenes])
+            
+        if not full_text:
+            logger.warning("Kein Text für SEO-Generierung gefunden.")
+            return data.get("seo") or {}
+            
+        prompt = f"""Du bist ein SEO-Experte für YouTube und soziale Medien. Generiere für den folgenden vietnamesischen Video-Text/Geschichte optimierte SEO-Metadaten.
+        
+Text des Videos:
+{full_text}
+
+MANDATORY REQUIREMENTS:
+1. Title: Create an engaging, high-CTR Vietnamese title (max 60 characters).
+2. Description: Create a description in Vietnamese containing:
+   - 2 sentences of SEO-optimized description with important search terms.
+   - A detailed summary of 5-6 sentences about the video content/story.
+3. Tags: Generate 10-15 relevant Vietnamese search keywords (comma-separated).
+
+Return ONLY a valid JSON object with the following keys, no markdown wrapper:
+{{
+  "title": "<Titel>",
+  "description": "<SEO-Beschreibung und die 5-6 Sätze Zusammenfassung>",
+  "tags": "<Keyword1, Keyword2, ...>"
+}}"""
+
+        config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.6,
+            safety_settings=SAFETY_SETTINGS_NONE,
+        )
+        
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=prompt,
+            config=config
+        )
+        
+        if response.text:
+            seo_res = extract_json(response.text)
+            if seo_res:
+                logger.info(f"✓ SEO Metadaten erfolgreich generiert: {seo_res.get('title')}")
+                return seo_res
+    except Exception as e:
+        logger.error(f"⚠ Fehler bei der SEO-Generierung in Archiver: {e}")
+        
+    return data.get("seo") or {}
+
 def main():
     env_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(env_path)
@@ -117,18 +181,18 @@ def main():
     logger.info("==================================================")
     logger.info("   ☁️  Theodorbot - Service 4: Der Archiver       ")
     logger.info("==================================================")
-
+    
     if not os.path.exists(INPUT_JSON):
         logger.error(f"✗ Datei {INPUT_JSON} nicht gefunden!")
         sys.exit(1)
-
+        
     with open(INPUT_JSON, "r", encoding="utf-8") as f:
         data = json.load(f)
-
+        
     # 1. Storyboard erstellen
     sb_path = create_storyboard(data)
     logger.info(f"✓ Storyboard generiert: {sb_path}")
-
+    
     # 2. ZIP erstellen
     video_title = data.get("video_title", "Theodor_Video")
     import re
@@ -143,8 +207,8 @@ def main():
     create_zip(zip_path)
     logger.info(f"✓ ZIP-Archiv gepackt: {zip_path}")
     
-    # 2.5 SEO Metadaten extrahieren
-    seo_data = data.get("seo", {})
+    # 2.5 SEO Metadaten generieren/extrahiern
+    seo_data = generate_seo_metadata(data)
     seo_name = f"{base_name}_SEO.json"
     seo_path = os.path.join(INPUT_DIR, seo_name)
     with open(seo_path, "w", encoding="utf-8") as f:
