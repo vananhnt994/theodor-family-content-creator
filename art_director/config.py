@@ -114,13 +114,19 @@ educational, and fun when read aloud — like a nature exploration show for kids
 RULES:
 1. PRESERVE THE CONTENT: Keep all facts and educational value. Do NOT invent new facts.
 2. TONE: Excited, curious, playful — NOT sleepy. This is daytime discovery, not bedtime!
-3. STRUCTURE: Organize the text into exactly 6 clear content blocks (~100 words each).
+3. STRUCTURE: Organize the text into exactly 6 clear content blocks with VARIABLE lengths:
+   - Block 1: ~60 words (Starker Einstieg)
+   - Block 2: ~100 words (Lebensraum)
+   - Block 3: ~100 words (Fähigkeiten)
+   - Block 4: ~120 words (Tägliches Leben)
+   - Block 5: ~140 words (Gefahren & Naturschutz)
+   - Block 6: ~160 words (Abschluss & Botschaft)
    Separate each block with a blank line for clarity.
 4. ENRICHMENT: Add fun animal comparisons and "did you know?" moments where natural.
 5. NO REAL NAMES: Use roles like "nhà thám hiểm nhí", "bạn nhỏ".
 6. PAUSES: Insert <break time="1.0s" /> at natural transitions between blocks (5 times).
 7. CHILD-FRIENDLY LANGUAGE: Replace overly academic words with simpler, warmer alternatives.
-8. LENGTH: The final text MUST be between 600 and 700 words. Cut or expand as needed.
+8. LENGTH: The final text MUST be between 700 and 800 words (~7 minutes). Cut or expand as needed.
 9. OUTPUT: Return ONLY the optimized Vietnamese text, no explanations, no JSON, no extra formatting.
 """
 
@@ -131,25 +137,26 @@ LONG_FORM_NATUR_SCENE_SPLIT_PROMPT = """Teile das folgende Natur-Skript in exakt
 
 Für JEDEN Abschnitt schreibe:
 1. "voiceover_text": Der exakte Textabschnitt aus dem Skript
-2. "duration_seconds": 60
+2. "duration_seconds": Die vorgegebene Dauer (siehe SZENEN-VORGABE)
 3. "emotion": Die Emotion dieses Abschnitts (z.B. "curious", "excited", "amazed", "playful", "thoughtful", "warm")
-4. "bild_prompt": Ein ENGLISCHER Bild-Prompt im Cute Ghibli 2D Stil für 16:9 Querformat.
-   STIL-REGELN (MANDATORY):
+4. "bild_prompt_a": Der erste ENGLISCHE Bild-Prompt im Cute Ghibli 2D Stil für 16:9 Querformat (beschreibt die erste Hälfte dieses Abschnitts).
+5. "bild_prompt_b": Der zweite ENGLISCHE Bild-Prompt im Cute Ghibli 2D Stil für 16:9 Querformat (beschreibt eine andere, neue Handlung, Perspektive oder Nahaufnahme in der zweiten Hälfte desselben Abschnitts).
+   STIL-REGELN FÜR BEIDE BILD-PROMPTS (MANDATORY):
    - Starte JEDEN Prompt mit: "flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, lush nature colors, soft watercolor textures, 16:9 landscape format."
    - Beschreibe das Tier mit großen ausdrucksvollen Augen, niedlich und kindgerecht.
    - Hintergründe: Lebendige, helle Natur — Wald, Wiese, Fluss, Sonnenlicht durch Blätter.
    - VERBOTEN: Fotografie, 3D, Realismus, dunkle Farben, Nacht-Szenen.
    - Verwende KONSISTENTE Tier-Beschreibung in JEDEM Prompt (gleiche Farbe, Größe, Merkmale).
-5. "video_prompt": Ein DETAILLIERTER ENGLISCHER Video-Prompt (max 30 Wörter) der die BEWEGUNG und das VERHALTEN des Tieres in diesem Abschnitt beschreibt.
+6. "video_prompt": Ein DETAILLIERTER ENGLISCHER Video-Prompt (max 30 Wörter) der die BEWEGUNG und das VERHALTEN des Tieres in diesem Abschnitt beschreibt.
    Beispiel: "Curious squirrel jumps between oak branches, collecting acorns, fluffy tail bouncing, soft dappled sunlight filtering through green canopy, gentle breeze."
 
-SZENEN-VORGABE:
-- Szene 1: Begrüßung und Eintritt in die Naturwelt
-- Szene 2: Entdeckung des Tieres — Aussehen und erste Begegnung
-- Szene 3: Gewohnheiten und Eigenschaften des Tieres
-- Szene 4: Besonderes Verhalten oder überraschendes Fun Fact
-- Szene 5: Warum ist das Tier wichtig für die Natur?
-- Szene 6: Verabschiedung und Botschaft
+SZENEN-VORGABE (7-Minuten-Struktur mit VARIABLER Dauer):
+- Szene 1: Starker Einstieg — Überraschende Frage/Fakt (duration_seconds: 40)
+- Szene 2: Lebensraum der Tiere — Wo lebt das Tier? (duration_seconds: 60)
+- Szene 3: Interessante Fähigkeiten — Tarnung, Jagd, Kommunikation (duration_seconds: 60)
+- Szene 4: Tägliches Leben — Nahrung, Familie, Schutz (duration_seconds: 70)
+- Szene 5: Gefahren & Naturschutz — Bedrohung, wie helfen (duration_seconds: 90)
+- Szene 6: Abschluss & starke Botschaft — Zusammenfassung, Like/Subscribe (duration_seconds: 100)
 
 Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
 {
@@ -157,9 +164,10 @@ Trả lời CHỈ bằng JSON, KHÔNG thêm text nào khác:
     {
       "scene_number": 1,
       "voiceover_text": "...",
-      "duration_seconds": 60,
+      "duration_seconds": 40,
       "emotion": "...",
-      "bild_prompt": "...",
+      "bild_prompt_a": "...",
+      "bild_prompt_b": "...",
       "video_prompt": "..."
     }
   ]

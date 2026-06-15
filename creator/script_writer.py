@@ -263,14 +263,14 @@ def clean_book_text(raw_text: str, category: str = "schlaf") -> dict | None:
 
     # Category-specific word limit & speed estimate
     if category == "natur":
-        NATUR_WORD_LIMIT = 700
+        NATUR_WORD_LIMIT = 800
         if word_count > NATUR_WORD_LIMIT:
             logger.warning(f"[Creator/Long-Natur] ⚠ Text hat {word_count} Wörter — kürze auf {NATUR_WORD_LIMIT} Wörter.")
             words = text.split()
             text = " ".join(words[:NATUR_WORD_LIMIT])
             word_count = NATUR_WORD_LIMIT
-        # Normal speaking speed ~120 words/min
-        estimated_minutes = round(word_count / 120, 1)
+        # Normal speaking speed ~115 words/min → ~7 min for 800 words
+        estimated_minutes = round(word_count / 115, 1)
     else:
         # Warm, slow narration ~130 words/min
         estimated_minutes = round(word_count / 130, 1)

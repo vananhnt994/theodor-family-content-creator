@@ -136,9 +136,9 @@ def _run_long_form_natur(data: dict, env_path: str):
         prompt = f"""Optimize this Vietnamese nature exploration text.
 CRITICAL REQUIREMENTS:
 1. Make it sound exciting, curious, and playful — like a nature documentary for kids.
-2. Organize into exactly 6 content blocks, each ~100 words.
+2. Organize into exactly 6 content blocks with variable lengths (60, 100, 100, 120, 140, 160 words).
 3. Keep all factual content about the animal: {animal}
-4. Final length: 600-700 words.
+4. Final length: 700-800 words (~7 minutes).
 
 Input Text:
 {cleaned_text}"""
@@ -200,32 +200,46 @@ NATUR-SKRIPT:
         for i, scene in enumerate(scenes):
             scene["scene_number"] = i + 1
             scene["duration_seconds"] = scene.get("duration_seconds", 60)
-            if "bild_prompt" not in scene:
-                scene["bild_prompt"] = f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format."
+            
+            # Support both backward compatibility (if Gemini still outputs bild_prompt sometimes) and two image prompts
+            bp_fallback = scene.get("bild_prompt") or f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format."
+            
+            if "bild_prompt_a" not in scene:
+                scene["bild_prompt_a"] = scene.get("bild_prompt") or bp_fallback
+            if "bild_prompt_b" not in scene:
+                # Add a slight variation to the second prompt if it was missing
+                scene["bild_prompt_b"] = scene.get("bild_prompt_a") + " Alternative view, slightly different angle, cute close-up."
+                
             if "video_prompt" not in scene:
                 scene["video_prompt"] = f"Gentle {animal} moving through sunlit forest, soft breeze, peaceful nature atmosphere."
             valid_scenes.append(scene)
 
-        logger.info(f"✓ {len(valid_scenes)} Szenen mit Bild+Video-Prompts generiert.")
+        logger.info(f"✓ {len(valid_scenes)} Szenen mit Bild+Video-Prompts (jeweils 2 Bilder) generiert.")
         for s in valid_scenes:
             logger.info(f"  🎞 Szene {s['scene_number']}: {s.get('emotion', '?')} | {s['voiceover_text'][:50]}...")
 
     except Exception as e:
         logger.error(f"⚠ Fehler beim Scene-Split: {e}. Erstelle Fallback-Szenen.")
-        # Fallback: split text into 6 equal parts
+        # Fallback: split text into 6 parts with variable durations
         words = optimized_text.split()
-        chunk_size = max(1, len(words) // 6)
+        # Variable chunk sizes matching 7-min structure (proportional)
+        chunk_ratios = [60, 100, 100, 120, 140, 160]  # word targets per section
+        total_ratio = sum(chunk_ratios)
+        durations = [40, 60, 60, 70, 90, 100]  # seconds per section
         valid_scenes = []
+        word_pos = 0
         for i in range(6):
-            start = i * chunk_size
-            end = start + chunk_size if i < 5 else len(words)
-            scene_text = " ".join(words[start:end])
+            chunk_words = max(1, int(len(words) * chunk_ratios[i] / total_ratio))
+            end_pos = word_pos + chunk_words if i < 5 else len(words)
+            scene_text = " ".join(words[word_pos:end_pos])
+            word_pos = end_pos
             valid_scenes.append({
                 "scene_number": i + 1,
                 "voiceover_text": scene_text,
-                "duration_seconds": 60,
+                "duration_seconds": durations[i],
                 "emotion": "curious",
-                "bild_prompt": f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format.",
+                "bild_prompt_a": f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, {animal} in a lush green forest, 16:9 landscape format.",
+                "bild_prompt_b": f"flat 2D Japanese anime illustration, cute Studio Ghibli style, bright daylight, cute close-up of {animal} in a lush green forest, 16:9 landscape format.",
                 "video_prompt": f"Gentle {animal} exploring nature, soft breeze, peaceful forest atmosphere.",
             })
 

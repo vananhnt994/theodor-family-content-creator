@@ -1,6 +1,6 @@
 # 🎬 Theodorbot: The Local Video Content Factory
 
-Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (60s TikToks/Shorts) sowie Long-Form Audios (bis 12min Gute-Nacht-Geschichten). 
+Eine vollautomatisierte, ressourcenschonende Microservice-Pipeline zur Erstellung von Kurzvideos (60s TikToks/Shorts) sowie Long-Form Audios (bis 12min Gute-Nacht-Geschichten) und Natur-Videos (~7min). 
 Optimiert für Edge-Geräte mit begrenztem Arbeitsspeicher (z.B. 8 GB RAM), da alle Services strikt nacheinander ausgeführt werden.
 
 ## 🚀 Schnellstart
@@ -16,7 +16,7 @@ python run_pipeline.py --channel betheo --artikel
 python run_long_pipeline.py --channel betheo
 python run_long_pipeline.py --channel betheo --category schlaf  # explizit
 
-# Long-Form Pipeline (Natur erkunden, 6-Minuten-Video mit 6 Szenen)
+# Long-Form Pipeline (Natur erkunden, ~7-Minuten-Video mit 6 Szenen, KI wählt Tier)
 python run_long_pipeline.py --channel betheo --category natur
 
 # Upload-Pipeline (fertiges Video hochladen)
@@ -181,14 +181,15 @@ python run_long_pipeline.py --channel betheo --category natur
 
 | Feature | Kategorie: Schlaf (`schlaf`) | Kategorie: Natur (`natur`) |
 | :--- | :--- | :--- |
-| **Input-Ordner (Service 0)** | `input/long/books/` | `input/long/books_natur/` |
-| **Dauer** | ~12 Minuten (Audio only) | **~6 Minuten (Video mit 6 Bildern)** |
-| **Szenen (Service 2)** | Keine (Fließtext) | 6 Szenen à 60s mit Bild+Video-Prompts |
+| **Quelle (Service 0)** | `input/long/books/` (PDF) | **Direkte KI-Generierung** (kein PDF) |
+| **Tier-Auswahl** | _(nicht relevant)_ | **KI wählt aus Pool, History-Dedup über Tier-Familien** |
+| **Dauer** | ~12 Minuten (Audio only) | **~7 Minuten (Video mit 6 Bildern)** |
+| **Szenen (Service 2)** | Keine (Fließtext) | 6 Szenen mit variabler Dauer (40-100s) |
 | **Inhaltlicher Fokus (Service 2)** | Beruhigend, monoton, Traumwelt | Edukativ, spannend, kindgerechte Biologie |
 | **Visueller Stil (Service 2)** | Ghibli 2D, peaceful, leichte Farben | Cute Ghibli 2D, hell, Natur, Tageslicht (16:9) |
 | **Sprach-Dynamik (Service 3B)** | Ruhig (stability 0.60) | Aufgeweckt (stability 0.50) |
 | **Stimme (Service 3B)** | Frau (Calm and Smooth) | Frau (Calm and Smooth) |
-| **Wort-Limit (Service 1)** | ~1.500 Wörter (12 Min. gestreckt) | ~700 Wörter (6 Min. normal) |
+| **Wort-Limit (Service 1)** | ~1.500 Wörter (12 Min. gestreckt) | ~800 Wörter (7 Min. normal) |
 | **Service 3A (Bilder)** | ❌ Deaktiviert | ✅ 6 Bilder (16:9 Querformat) |
 | **Service 6 (Video-Editor)** | ❌ Deaktiviert | ✅ Video aus 6 Bildern + Audio |
 
