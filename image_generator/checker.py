@@ -103,7 +103,7 @@ Return ONLY the new refined prompt as plain text.
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="deepseek-chat",
             contents=refine_instruction
         )
         return response.text.strip() if response.text else old_prompt

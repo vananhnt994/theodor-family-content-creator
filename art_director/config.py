@@ -8,7 +8,7 @@ import os
 # ---------------------------------------------------------------------------
 # API Configuration
 # ---------------------------------------------------------------------------
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_MODEL = "deepseek-chat"
 # The API Key is expected to be an environment variable GOOGLE_API_KEY.
 
 # ---------------------------------------------------------------------------
