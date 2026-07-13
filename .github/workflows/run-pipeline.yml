@@ -1,9 +1,9 @@
 name: "🎬 Content Pipeline"
 
 on:
-  schedule:
-    # Dienstag, Donnerstag, Sonntag um 08:00 Uhr deutscher Zeit (06:00 UTC)
-    - cron: "0 6 * * 2,4,0"
+#  schedule:
+#    # Dienstag, Donnerstag, Sonntag um 08:00 Uhr deutscher Zeit (06:00 UTC)
+#    - cron: "0 6 * * 2,4,0"
   workflow_dispatch:
     inputs:
       mode:
