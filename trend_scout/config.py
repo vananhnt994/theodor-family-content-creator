@@ -14,7 +14,7 @@ from channel_config import load_channel_config
 
 channel_cfg = load_channel_config()
 
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 # ---------------------------------------------------------------------------
 # Scraper Configuration

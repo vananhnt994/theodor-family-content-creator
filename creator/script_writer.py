@@ -159,7 +159,7 @@ def split_into_scenes(voiceover_text: str, mood: str) -> list[dict] | None:
             if attempt == 3:
                 # Remove system prompt to see if that was triggering the filter, and use a stronger model
                 use_sys = False
-                mod_override = "gemini-2.5-flash"
+                mod_override = "gemini-3.6-flash"
 
             response_text = _call_llm(current_prompt, temperature=0.5, use_system_prompt=use_sys, model_override=mod_override)
             logger.debug(f"[Creator] LLM Antwort: {response_text}")
