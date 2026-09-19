@@ -2,11 +2,14 @@ import os
 import json
 import logging
 import sys
+import io
+from PIL import Image
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from PIL import Image
-import io
-from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from shared.gemini_utils import create_client
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("ImageGenerator")
@@ -14,8 +17,56 @@ logger = logging.getLogger("ImageGenerator")
 INPUT_FILE = "output/finale_prompts.json"
 OUTPUT_DIR = "output"
 
+def generate_image(prompt: str, aspect_ratio: str = "9:16") -> Image.Image:
+    """
+    Generates an image using available providers/models:
+    1. Vertex AI Imagen models (if GOOGLE_PROJECT_ID set & access available)
+    2. Gemini API Key Client with native image models (gemini-3.1-flash-image, gemini-2.5-flash-image)
+    """
+    project = os.environ.get("GOOGLE_PROJECT_ID")
+    location = os.environ.get("GOOGLE_LOCATION", "us-central1")
+
+    # 1. Try Vertex AI Imagen if configured
+    if project:
+        for model_name in ["imagen-3.0-generate-002", "imagen-3.0-fast-generate-001"]:
+            try:
+                vclient = genai.Client(vertexai=True, project=project, location=location)
+                result = vclient.models.generate_images(
+                    model=model_name,
+                    prompt=prompt,
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        output_mime_type="image/jpeg",
+                        aspect_ratio=aspect_ratio
+                    )
+                )
+                if result.generated_images:
+                    return Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
+            except Exception as e:
+                logger.debug(f"Vertex AI Imagen ({model_name}) nicht verfügbar: {e}")
+
+    # 2. Fallback: Gemini API Key Client
+    gclient = create_client()
+    ratio_str = "9:16 vertical ratio" if aspect_ratio == "9:16" else "16:9 horizontal ratio"
+    full_prompt = f"{prompt} Format: {ratio_str}."
+
+    for model_name in ["gemini-3.1-flash-image", "gemini-2.5-flash-image"]:
+        try:
+            res = gclient.models.generate_content(
+                model=model_name,
+                contents=full_prompt,
+            )
+            if res.candidates:
+                for part in res.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        return Image.open(io.BytesIO(part.inline_data.data))
+        except Exception as e:
+            logger.debug(f"Gemini API Modell ({model_name}) fehlgeschlagen: {e}")
+
+    raise RuntimeError("Kein Bildgenerator verfügbar oder alle Versuche fehlgeschlagen.")
+
+
 def main():
-    # .env laden für Umgebungsvariablen wie GOOGLE_APPLICATION_CREDENTIALS
     env_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(env_path)
     load_dotenv()
@@ -23,15 +74,6 @@ def main():
     logger.info("==================================================")
     logger.info("   🖼️ Theodorbot - Service 3A: Bild-Beschaffer    ")
     logger.info("==================================================")
-    
-    project = os.environ.get("GOOGLE_PROJECT_ID")
-    location = os.environ.get("GOOGLE_LOCATION", "us-central1")
-    
-    try:
-        client = genai.Client(vertexai=True, project=project, location=location)
-    except Exception as e:
-        logger.error(f"✗ Vertex AI Setup gescheitert. Bitte prüfe deine GOOGLE_APPLICATION_CREDENTIALS: {e}")
-        sys.exit(1)
 
     if not os.path.exists(INPUT_FILE):
         logger.error(f"✗ Input Datei {INPUT_FILE} fehlt.")
@@ -73,49 +115,35 @@ def main():
                         logger.info(f"Szene {sn} Bild {suffix} existiert bereits. Überspringe...")
                         continue
 
-                    logger.info(f"🎨 Generiere Bild für Szene {sn} ({suffix}) (16:9) via Vertex AI...")
+                    logger.info(f"🎨 Generiere Bild für Szene {sn} ({suffix}) (16:9)...")
 
                     current_prompt = prompt
                     max_retries = 2
                     for attempt in range(max_retries + 1):
                         try:
-                            result = client.models.generate_images(
-                                model='imagen-4.0-fast-generate-001',
-                                prompt=current_prompt,
-                                config=types.GenerateImagesConfig(
-                                    number_of_images=1,
-                                    output_mime_type="image/jpeg",
-                                    aspect_ratio="16:9"
-                                )
-                            )
-                            if result.generated_images:
-                                image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
-                                image.save(out_path)
-                                logger.info(f"✓ Bild {suffix} gespeichert: {out_path} (Versuch {attempt + 1})")
+                            image = generate_image(current_prompt, aspect_ratio="16:9")
+                            image.convert("RGB").save(out_path, "JPEG")
+                            logger.info(f"✓ Bild {suffix} gespeichert: {out_path} (Versuch {attempt + 1})")
 
-                                # --- Quality Check Step ---
-                                from image_generator.checker import check_image, refine_prompt_on_failure
-                                logger.info(f"🔍 Prüfe Bildqualität für Szene {sn} ({suffix})...")
-                                check_result = check_image(out_path, current_prompt, scene.get("voiceover_text", ""))
+                            # --- Quality Check Step ---
+                            from image_generator.checker import check_image, refine_prompt_on_failure
+                            logger.info(f"🔍 Prüfe Bildqualität für Szene {sn} ({suffix})...")
+                            check_result = check_image(out_path, current_prompt, scene.get("voiceover_text", ""))
 
-                                if check_result.get("is_passed"):
-                                    logger.info(f"✅ Qualitätssicherung bestanden (Score: {check_result.get('score')}/10)")
-                                    break
-                                else:
-                                    logger.warning(f"⚠️ QUALITÄTS-WARNUNG Szene {sn} ({suffix}): {check_result.get('reason')}")
-                                    if attempt < max_retries:
-                                        logger.info(f"🔄 Verfeinere Prompt und versuche es erneut...")
-                                        current_prompt = refine_prompt_on_failure(
-                                            current_prompt,
-                                            check_result.get("reason", ""),
-                                            check_result.get("missing_elements", [])
-                                        )
-                                    else:
-                                        logger.error(f"❌ Max. Versuche erreicht für Szene {sn} ({suffix}). Behalte letztes Bild.")
-                            else:
-                                logger.error(f"✗ Kein Bild {suffix} für Szene {sn} erhalten.")
-                                has_error = True
+                            if check_result.get("is_passed"):
+                                logger.info(f"✅ Qualitätssicherung bestanden (Score: {check_result.get('score')}/10)")
                                 break
+                            else:
+                                logger.warning(f"⚠️ QUALITÄTS-WARNUNG Szene {sn} ({suffix}): {check_result.get('reason')}")
+                                if attempt < max_retries:
+                                    logger.info(f"🔄 Verfeinere Prompt und versuche es erneut...")
+                                    current_prompt = refine_prompt_on_failure(
+                                        current_prompt,
+                                        check_result.get("reason", ""),
+                                        check_result.get("missing_elements", [])
+                                    )
+                                else:
+                                    logger.error(f"❌ Max. Versuche erreicht für Szene {sn} ({suffix}). Behalte letztes Bild.")
                         except Exception as e:
                             logger.error(f"✗ Fehler bei Szene {sn} ({suffix}) (Versuch {attempt + 1}): {e}")
                             if attempt == max_retries:
@@ -137,24 +165,11 @@ def main():
             if os.path.exists(out_path):
                 logger.info(f"Cover existiert bereits ({out_path}). Überspringe Generierung...")
             else:
-                logger.info("🎨 Generiere Cover-Bild (16:9) via Vertex AI...")
+                logger.info("🎨 Generiere Cover-Bild (16:9)...")
                 try:
-                    result = client.models.generate_images(
-                        model='imagen-4.0-fast-generate-001',
-                        prompt=prompt,
-                        config=types.GenerateImagesConfig(
-                            number_of_images=1,
-                            output_mime_type="image/jpeg",
-                            aspect_ratio="16:9"
-                        )
-                    )
-                    if result.generated_images:
-                        image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
-                        image.save(out_path)
-                        logger.info(f"✓ Cover gespeichert: {out_path}")
-                    else:
-                        logger.error("✗ Kein Bild erhalten.")
-                        sys.exit(1)
+                    image = generate_image(prompt, aspect_ratio="16:9")
+                    image.convert("RGB").save(out_path, "JPEG")
+                    logger.info(f"✓ Cover gespeichert: {out_path}")
                 except Exception as e:
                     logger.error(f"✗ Fehler bei Cover-Generierung: {e}")
                     sys.exit(1)
@@ -175,51 +190,36 @@ def main():
             logger.info(f"Szene {sn} Bild existiert bereits. Überspringe...")
             continue
             
-        logger.info(f"🎨 Generiere Bild für Szene {sn} (9:16) via Vertex AI...")
+        logger.info(f"🎨 Generiere Bild für Szene {sn} (9:16)...")
         
         current_prompt = prompt
         max_retries = 2
         for attempt in range(max_retries + 1):
             try:
-                result = client.models.generate_images(
-                    model='imagen-4.0-fast-generate-001',
-                    prompt=current_prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1,
-                        output_mime_type="image/jpeg",
-                        aspect_ratio="9:16"
-                    )
-                )
-                if result.generated_images:
-                    image = Image.open(io.BytesIO(result.generated_images[0].image.image_bytes))
-                    image.save(out_path)
-                    logger.info(f"✓ Bild gespeichert: {out_path} (Versuch {attempt + 1})")
+                image = generate_image(current_prompt, aspect_ratio="9:16")
+                image.convert("RGB").save(out_path, "JPEG")
+                logger.info(f"✓ Bild gespeichert: {out_path} (Versuch {attempt + 1})")
 
-                    # --- Quality Check Step ---
-                    from image_generator.checker import check_image, refine_prompt_on_failure
-                    logger.info(f"🔍 Prüfe Bildqualität für Szene {sn}...")
-                    check_result = check_image(out_path, current_prompt, scene.get("voiceover_text", ""))
-                    
-                    if check_result.get("is_passed"):
-                        logger.info(f"✅ Qualitätssicherung bestanden (Score: {check_result.get('score')}/10)")
-                        break # Success!
-                    else:
-                        logger.warning(f"⚠️ QUALITÄTS-WARNUNG Szene {sn}: {check_result.get('reason')}")
-                        if attempt < max_retries:
-                            logger.info(f"🔄 Verfeinere Prompt und versuche es erneut...")
-                            current_prompt = refine_prompt_on_failure(
-                                current_prompt, 
-                                check_result.get("reason", ""), 
-                                check_result.get("missing_elements", [])
-                            )
-                            logger.debug(f"Neuer Prompt: {current_prompt}")
-                        else:
-                            logger.error(f"❌ Max. Versuche erreicht für Szene {sn}. Behalte letztes Bild.")
-                    # --------------------------
+                # --- Quality Check Step ---
+                from image_generator.checker import check_image, refine_prompt_on_failure
+                logger.info(f"🔍 Prüfe Bildqualität für Szene {sn}...")
+                check_result = check_image(out_path, current_prompt, scene.get("voiceover_text", ""))
+                
+                if check_result.get("is_passed"):
+                    logger.info(f"✅ Qualitätssicherung bestanden (Score: {check_result.get('score')}/10)")
+                    break # Success!
                 else:
-                    logger.error(f"✗ Kein Bild für Szene {sn} erhalten.")
-                    has_error = True
-                    break
+                    logger.warning(f"⚠️ QUALITÄTS-WARNUNG Szene {sn}: {check_result.get('reason')}")
+                    if attempt < max_retries:
+                        logger.info(f"🔄 Verfeinere Prompt und versuche es erneut...")
+                        current_prompt = refine_prompt_on_failure(
+                            current_prompt, 
+                            check_result.get("reason", ""), 
+                            check_result.get("missing_elements", [])
+                        )
+                        logger.debug(f"Neuer Prompt: {current_prompt}")
+                    else:
+                        logger.error(f"❌ Max. Versuche erreicht für Szene {sn}. Behalte letztes Bild.")
             except Exception as e:
                 logger.error(f"✗ Fehler bei Szene {sn} (Versuch {attempt + 1}): {e}")
                 if attempt == max_retries:

@@ -57,7 +57,7 @@ Analyze this image based on the provided prompt and voiceover.
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash", # High performance vision model
+            model="gemini-3.6-flash", # High performance vision model
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
                 types.Part.from_text(text=CHECKER_PROMPT + "\n\n" + prompt)
@@ -103,7 +103,7 @@ Return ONLY the new refined prompt as plain text.
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=refine_instruction
         )
         return response.text.strip() if response.text else old_prompt

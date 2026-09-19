@@ -158,7 +158,7 @@ Return ONLY a valid JSON object with the following keys, no markdown wrapper:
         )
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=prompt,
             config=config
         )
