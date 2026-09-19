@@ -16,9 +16,10 @@ on:
           - book
           - artikel
 
-# Erlaubt dem GITHUB_TOKEN, Änderungen zu pushen
+# Erlaubt dem GITHUB_TOKEN, Änderungen zu pushen und OIDC-Tokens für GCP Workload Identity abzurufen
 permissions:
   contents: write
+  id-token: write
 
 env:
   GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -36,6 +37,10 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      - name: ⏱️ Startzeit merken
+        id: start_time
+        run: echo "time=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
@@ -110,3 +115,30 @@ jobs:
           name: pipeline-output-${{ github.run_number }}
           path: output/
           retention-days: 7
+
+      - name: 🔐 GCP Auth
+        if: always()
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: ☁️ Setup gcloud
+        if: always()
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: 📊 Metriken an Cloud Monitoring senden
+        if: always()
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          JOB_STATUS: ${{ job.status }}
+          REPOSITORY: ${{ github.repository }}
+          START_TIME: ${{ steps.start_time.outputs.time }}
+        run: |
+          START="${{ steps.start_time.outputs.time }}"
+          END=$(date -u +%s)
+          if [ -n "$START" ]; then
+            export DURATION=$(( END - START ))
+          fi
+          python .github/scripts/send_monitoring_metrics.py
