@@ -1,0 +1,15 @@
+# Vorlage für Prometheus Konfiguration
+# Kopiere diese Datei nach 'prometheus.yml' und passe das Passwort an.
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: pushgateway
+    honor_labels: true
+    basic_auth:
+      username: 'admin'
+      password: 'DEIN_PUSHGATEWAY_PASSWORT'
+    static_configs:
+      - targets:
+          - pushgateway:9091
