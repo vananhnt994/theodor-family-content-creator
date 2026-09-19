@@ -42,11 +42,21 @@ def send_metrics() -> None:
         except ValueError:
             pass
 
-    print("📊 Preparing Cloud Monitoring metric export:")
+    # Determine status value (1 for success, 0 for anything else)
+    status_val_str = os.environ.get("STATUS_VAL", "").strip()
+    if status_val_str:
+        try:
+            status_val = int(status_val_str)
+        except ValueError:
+            status_val = 1 if job_status.lower() == "success" else 0
+    else:
+        status_val = 1 if job_status.lower() == "success" else 0
+
+    print("📊 Preparing Cloud Monitoring metrics export:")
     print(f"   Project:    {project_id}")
     print(f"   Workflow:   {workflow_name}")
     print(f"   Repository: {repository}")
-    print(f"   Status:     {job_status}")
+    print(f"   Status:     {job_status} (val: {status_val})")
     print(f"   Duration:   {duration:.1f}s")
 
     try:
@@ -56,29 +66,44 @@ def send_metrics() -> None:
         client = monitoring_v3.MetricServiceClient()
         project_name = f"projects/{project_id}"
 
-        series = monitoring_v3.TimeSeries()
-        series.metric.type = "custom.googleapis.com/github/workflow_run"
-        series.metric.labels["workflow"] = str(workflow_name)
-        series.metric.labels["status"] = str(job_status)
-        series.metric.labels["repo"] = str(repository)
-        series.resource.type = "global"
-        series.resource.labels["project_id"] = str(project_id)
-
         seconds = int(now)
         nanos = int((now - seconds) * 10**9)
         end_time = Timestamp(seconds=seconds, nanos=nanos)
         interval = monitoring_v3.TimeInterval(end_time=end_time)
 
-        point = monitoring_v3.Point(
+        # 1. Metrik: Laufzeit (workflow_duration)
+        series_duration = monitoring_v3.TimeSeries()
+        series_duration.metric.type = "custom.googleapis.com/github/workflow_duration"
+        series_duration.metric.labels["workflow"] = str(workflow_name)
+        series_duration.metric.labels["repo"] = str(repository)
+        series_duration.resource.type = "global"
+        series_duration.resource.labels["project_id"] = str(project_id)
+
+        point_duration = monitoring_v3.Point(
             interval=interval,
             value={"double_value": float(duration)},
         )
-        series.points = [point]
+        series_duration.points = [point_duration]
 
-        client.create_time_series(name=project_name, time_series=[series])
-        print("✅ Metric 'custom.googleapis.com/github/workflow_run' successfully published to Cloud Monitoring!")
+        # 2. Metrik: Erfolgsstatus (workflow_status: 1=success, 0=other)
+        series_status = monitoring_v3.TimeSeries()
+        series_status.metric.type = "custom.googleapis.com/github/workflow_status"
+        series_status.metric.labels["workflow"] = str(workflow_name)
+        series_status.metric.labels["repo"] = str(repository)
+        series_status.resource.type = "global"
+        series_status.resource.labels["project_id"] = str(project_id)
+
+        point_status = monitoring_v3.Point(
+            interval=interval,
+            value={"int64_value": int(status_val)},
+        )
+        series_status.points = [point_status]
+
+        # API Call für beide Metriken auf einmal
+        client.create_time_series(name=project_name, time_series=[series_duration, series_status])
+        print("✅ Metrics 'workflow_duration' and 'workflow_status' successfully published to Cloud Monitoring!")
     except Exception as exc:
-        print(f"❌ Failed to publish metric to Cloud Monitoring: {exc}", file=sys.stderr)
+        print(f"❌ Failed to publish metrics to Cloud Monitoring: {exc}", file=sys.stderr)
         raise
 
 
