@@ -33,6 +33,9 @@ client_secret.json
 token.json
 drive_token.json
 youtube_token.json
+sa-key.json
+monitoring/web-config.yml
+monitoring/prometheus.yml
 
 # Temp Files
 temp_*.mp4

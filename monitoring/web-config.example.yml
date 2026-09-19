@@ -1,0 +1,6 @@
+# Vorlage für Pushgateway Basic Auth (Passwort-Hash mit Bcrypt)
+# Kopiere diese Datei nach 'web-config.yml'.
+# Hash generieren: python -c "import bcrypt; print(bcrypt.hashpw(b'DEIN_PASSWORT', bcrypt.gensalt(10)).decode())"
+
+basic_auth_users:
+  admin: '$2b$10$DEIN_BCRYPT_HASH_HIER'
