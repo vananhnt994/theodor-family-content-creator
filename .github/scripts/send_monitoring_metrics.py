@@ -51,6 +51,7 @@ def send_metrics() -> None:
 
     try:
         from google.cloud import monitoring_v3
+        from google.protobuf.timestamp_pb2 import Timestamp
 
         client = monitoring_v3.MetricServiceClient()
         project_name = f"projects/{project_id}"
@@ -61,10 +62,17 @@ def send_metrics() -> None:
         series.metric.labels["status"] = str(job_status)
         series.metric.labels["repo"] = str(repository)
         series.resource.type = "global"
+        series.resource.labels["project_id"] = str(project_id)
 
-        point = monitoring_v3.Point()
-        point.value.double_value = float(duration)
-        point.interval.end_time.seconds = int(now)
+        seconds = int(now)
+        nanos = int((now - seconds) * 10**9)
+        end_time = Timestamp(seconds=seconds, nanos=nanos)
+        interval = monitoring_v3.TimeInterval(end_time=end_time)
+
+        point = monitoring_v3.Point(
+            interval=interval,
+            value={"double_value": float(duration)},
+        )
         series.points = [point]
 
         client.create_time_series(name=project_name, time_series=[series])
