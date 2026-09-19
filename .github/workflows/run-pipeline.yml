@@ -141,4 +141,12 @@ jobs:
           if [ -n "$START" ]; then
             export DURATION=$(( END - START ))
           fi
+
+          # Status in eine Zahl umwandeln (1 für success, 0 für alles andere)
+          if [ "${{ job.status }}" = "success" ]; then
+            export STATUS_VAL=1
+          else
+            export STATUS_VAL=0
+          fi
+
           python .github/scripts/send_monitoring_metrics.py
