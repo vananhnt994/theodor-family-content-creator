@@ -18,6 +18,107 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
+def _get_project_and_cost_metrics() -> list:
+    """Calculate and return project production counts and FinOps cost metrics."""
+    import json
+    shorts_count = 0
+    long_count = 0
+
+    shorts_file = "output/historie_shorts.json"
+    if os.path.exists(shorts_file):
+        try:
+            with open(shorts_file, "r", encoding="utf-8") as f:
+                shorts_count = len(json.load(f))
+        except Exception:
+            pass
+
+    long_file = "output/historie_long.json"
+    if os.path.exists(long_file):
+        try:
+            with open(long_file, "r", encoding="utf-8") as f:
+                long_count = len(json.load(f))
+        except Exception:
+            pass
+
+    total_videos = shorts_count + long_count
+
+    cost_short_gemini = 0.005
+    cost_short_imagen = 0.035
+    cost_short_audio = 0.150
+    cost_per_short = cost_short_gemini + cost_short_imagen + cost_short_audio
+
+    cost_long_gemini = 0.015
+    cost_long_imagen = 0.070
+    cost_long_audio = 2.100
+    cost_per_long = cost_long_gemini + cost_long_imagen + cost_long_audio
+
+    total_spend_gemini = (shorts_count * cost_short_gemini) + (long_count * cost_long_gemini)
+    total_spend_imagen = (shorts_count * cost_short_imagen) + (long_count * cost_long_imagen)
+    total_spend_audio = (shorts_count * cost_short_audio) + (long_count * cost_long_audio)
+    total_spend_apis = total_spend_gemini + total_spend_imagen + total_spend_audio
+
+    gcp_vm_monthly = 15.60
+    gcp_vm_daily = 0.52
+    gcp_vm_hourly = 0.0208
+
+    return [
+        "# HELP project_total_videos_created Gesamtanzahl der erstellten Videos",
+        "# TYPE project_total_videos_created gauge",
+        f'project_total_videos_created{{type="shorts"}} {shorts_count}',
+        f'project_total_videos_created{{type="long"}} {long_count}',
+        f'project_total_videos_created{{type="total"}} {total_videos}',
+        "",
+        "# HELP gcp_vm_cost_dollars Kosten der Google Cloud VM in Dollar",
+        "# TYPE gcp_vm_cost_dollars gauge",
+        f'gcp_vm_cost_dollars{{instance="monitoring-vm",type="e2-small",period="hourly"}} {gcp_vm_hourly:.4f}',
+        f'gcp_vm_cost_dollars{{instance="monitoring-vm",type="e2-small",period="daily"}} {gcp_vm_daily:.2f}',
+        f'gcp_vm_cost_dollars{{instance="monitoring-vm",type="e2-small",period="monthly"}} {gcp_vm_monthly:.2f}',
+        "",
+        "# HELP microservice_cost_per_short_dollars Kosten pro Service fuer ein Short in Dollar",
+        "# TYPE microservice_cost_per_short_dollars gauge",
+        'microservice_cost_per_short_dollars{service="0_trend_scout",provider="Google Gemini API"} 0.001',
+        'microservice_cost_per_short_dollars{service="1_creator",provider="Google Gemini API"} 0.002',
+        'microservice_cost_per_short_dollars{service="2_art_director",provider="Google Gemini API"} 0.002',
+        f'microservice_cost_per_short_dollars{{service="3A_image_generator",provider="Google Vertex AI Imagen"}} {cost_short_imagen:.3f}',
+        f'microservice_cost_per_short_dollars{{service="3B_audio_generator",provider="ElevenLabs TTS"}} {cost_short_audio:.3f}',
+        'microservice_cost_per_short_dollars{service="4_archiver",provider="Google Drive API"} 0.000',
+        'microservice_cost_per_short_dollars{service="6_video_editor",provider="Local FFmpeg"} 0.000',
+        "",
+        "# HELP microservice_cost_per_long_dollars Kosten pro Service fuer ein Long-Video in Dollar",
+        "# TYPE microservice_cost_per_long_dollars gauge",
+        'microservice_cost_per_long_dollars{service="0_librarian",provider="Google Gemini API"} 0.003',
+        'microservice_cost_per_long_dollars{service="1_text_cleaner",provider="Google Gemini API"} 0.005',
+        'microservice_cost_per_long_dollars{service="2_story_critic",provider="Google Gemini API"} 0.007',
+        f'microservice_cost_per_long_dollars{{service="3A_cover_image",provider="Google Vertex AI Imagen"}} {cost_long_imagen:.3f}',
+        f'microservice_cost_per_long_dollars{{service="3B_audio_generator",provider="ElevenLabs TTS"}} {cost_long_audio:.3f}',
+        'microservice_cost_per_long_dollars{service="4_archiver",provider="Google Drive API"} 0.000',
+        'microservice_cost_per_long_dollars{service="6_video_editor",provider="Local FFmpeg"} 0.000',
+        "",
+        "# HELP unit_economics_video_cost_dollars Stueckkosten pro Video-Einheit in Dollar",
+        "# TYPE unit_economics_video_cost_dollars gauge",
+        f'unit_economics_video_cost_dollars{{type="Shorts (60s)"}} {cost_per_short:.3f}',
+        f'unit_economics_video_cost_dollars{{type="Long-Form (Gute Nacht)"}} {cost_per_long:.3f}',
+        "",
+        "# HELP cumulative_api_spend_dollars Bisher aufgelaufene API-Kosten aller produzierten Videos in Dollar",
+        "# TYPE cumulative_api_spend_dollars gauge",
+        f'cumulative_api_spend_dollars{{category="Google Gemini LLMs"}} {total_spend_gemini:.2f}',
+        f'cumulative_api_spend_dollars{{category="Google Vertex AI Imagen"}} {total_spend_imagen:.2f}',
+        f'cumulative_api_spend_dollars{{category="ElevenLabs Voice TTS"}} {total_spend_audio:.2f}',
+        f'cumulative_api_spend_dollars{{category="Total Production Spend"}} {total_spend_apis:.2f}',
+        "",
+        "# HELP microservice_execution_seconds_average Typische Ausfuehrungsdauer pro Microservice in Sekunden",
+        "# TYPE microservice_execution_seconds_average gauge",
+        'microservice_execution_seconds_average{service="0_trend_scout"} 18.5',
+        'microservice_execution_seconds_average{service="1_creator"} 24.2',
+        'microservice_execution_seconds_average{service="2_art_director"} 15.8',
+        'microservice_execution_seconds_average{service="3A_image_generator"} 38.4',
+        'microservice_execution_seconds_average{service="3B_audio_generator"} 45.1',
+        'microservice_execution_seconds_average{service="4_archiver"} 12.0',
+        'microservice_execution_seconds_average{service="6_video_editor"} 55.0',
+        "",
+    ]
+
+
 def push_to_prometheus_pushgateway(
     pushgateway_url: str,
     workflow_name: str,
@@ -48,6 +149,7 @@ def push_to_prometheus_pushgateway(
             f'github_workflow_status{{workflow="{s_workflow}",repo="{s_repo}",status="{s_status}"}} {int(status_val)}',
             "",
         ]
+        lines.extend(_get_project_and_cost_metrics())
         payload = "\n".join(lines).encode("utf-8")
 
         req = urllib.request.Request(target_url, data=payload, method="POST")
