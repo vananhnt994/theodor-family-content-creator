@@ -159,5 +159,5 @@ Du hast vollkommen richtig bemerkt, dass im Grafana-Dashboard der Durchlauf von 
 ### Dauerhafte Lösung für GitHub Actions:
 Aktualisiere in deinen GitHub-Repository-Einstellungen:
 * **Pfad:** `Settings` -> `Secrets and variables` -> `Actions` -> `PUSHGATEWAY_URL`
-* **Neuer Wert:** `http://admin:<PUSHGATEWAY_PASSWORD>@<MONITORING_VM_IP>:9091`
+* **Neuer Wert:** `http://admin:<DEIN_PUSHGATEWAY_PASSWORT>@<VM_IP>:9091`
 *(Alternativ kann in der Google Cloud Console eine statische IP für die VM reserviert werden, damit sie sich bei Neustarts nie wieder ändert).*
