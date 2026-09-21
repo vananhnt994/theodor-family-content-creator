@@ -1,0 +1,27 @@
+{
+  "channel_name": "MyChannel",
+  "youtube_url": "https://www.youtube.com/@mychannel",
+  "language": "Deutsch",
+  "topic": "Familienalltag, Erziehung, Psychologie",
+  "scraping_sources": [
+    {
+      "name": "Example News",
+      "url": "https://example.com/news",
+      "headline_selector": "h2.title a, h3.title a",
+      "article_body_selector": "article.content p"
+    }
+  ],
+  "voices": {
+    "Mann": "elevenlabs_voice_id_1",
+    "Frau": "elevenlabs_voice_id_2",
+    "Kind": "elevenlabs_voice_id_3"
+  },
+  "drive_folders": {
+    "archive": "your_drive_folder_id_here",
+    "ready_to_post": "your_drive_folder_id_here",
+    "seos": "your_drive_folder_id_here",
+    "uploaded_archiv": "your_drive_folder_id_here",
+    "long_archive": "your_drive_folder_id_here",
+    "long_seos": "your_drive_folder_id_here"
+  }
+}

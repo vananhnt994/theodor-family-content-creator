@@ -40,5 +40,11 @@ monitoring/prometheus.yml
 # Temp Files
 temp_*.mp4
 
-# Scratch files
+# Scratch & Debug files
+scratch/
 scratch_quota.py
+*.log
+*.tmp
+analysis*.txt
+selectors_output*.txt
+task.txt

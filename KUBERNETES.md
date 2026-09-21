@@ -122,7 +122,7 @@ gcloud container clusters create-auto theodor-k8s-cluster \
 Keine `credentials.json` mehr nötig! Dein Kubernetes Service Account (`content-creator-sa`) authentifiziert sich über IAM direkt bei Google Gemini, Cloud Storage und Cloud Monitoring:
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
-  theodor-service-account@<DEIN_GCP_PROJECT_ID>.iam.gserviceaccount.com \
+  content-creator-sa@<DEIN_GCP_PROJECT_ID>.iam.gserviceaccount.com \
   --role roles/iam.workloadIdentityUser \
   --member "serviceAccount:<DEIN_GCP_PROJECT_ID>.svc.id.goog[content-creator/content-creator-sa]"
 ```
@@ -132,32 +132,22 @@ In GKE kannst du einen Cloud Storage Bucket direkt als Verzeichnis `/app/output`
 
 ---
 
-## 🔍 5. PS-Analyse: Warum war der CronJob-Lauf um 21:46 Uhr nicht im Grafana-Dashboard sichtbar?
-
-Du hast vollkommen richtig bemerkt, dass im Grafana-Dashboard der Durchlauf von ca. **21:46 Uhr (Git-Commit `bf8f710`)** nicht angezeigt wurde. Hier ist die exakte technische Ursache:
+## 🔍 5. Troubleshooting: Warum Metriken bei dynamischen Cloud-IPs verloren gehen können
 
 ### Die Ursachenkette:
 1. **Der Lauf um 21:46 Uhr lief in GitHub Actions (Cloud):**
    Um 21:52 Uhr deutscher Zeit (19:52 UTC) hat der GitHub Actions Runner die Pipeline ausgeführt und das Video generiert.
-2. **Die IP-Änderung der Cloud-VM:**
-   Gestern Vormittag startete deine Google Compute Engine VM neu. Dabei änderte sich ihre öffentliche (ephemere) IP von `<MONITORING_VM_IP>` auf **`<MONITORING_VM_IP>`**.
+2. **Die IP-Änderung bei VM-Neustarts:**
+   Wenn eine Cloud-VM ohne reservierte statische IP neu gestartet wird, weist Google Cloud eine neue öffentliche IP zu.
 3. **Das veraltete GitHub Secret:**
-   In deinen **GitHub Repository Secrets** war `PUSHGATEWAY_URL` noch mit der alten IP konfiguriert (`http://admin:...@<MONITORING_VM_IP>:9091`).
+   In den **GitHub Repository Secrets** war `PUSHGATEWAY_URL` noch mit der vorherigen IP konfiguriert.
 4. **Verbindungsabbruch im Runner:**
-   Am Ende des Laufs versuchte `send_monitoring_metrics.py` die Metriken an die alte IP zu senden. Da diese IP nicht mehr existiert, lief der HTTP-Request in einen Timeout. Der Job selbst war erfolgreich, aber die Metrik kam in Prometheus nie an!
+   Am Ende des Laufs versuchte `send_monitoring_metrics.py` die Metriken an die alte IP zu senden. Da diese nicht mehr antwortete, lief der HTTP-Request in einen Timeout. Der Job selbst war erfolgreich, aber die Metrik kam in Prometheus nie an.
 5. **Minikube vs. Cloud:**
-   Das neu installierte Grafana in Minikube läuft lokal auf deinem Rechner (`localhost:3000`) und hat keinen Zugriff auf die GitHub Actions Cloud-Events.
-
-### Was wir gerade zur Behebung getan haben:
-* Wir haben die Metriken des 21:46-Uhr-Laufs manuell an die neue IP `<MONITORING_VM_IP>:9091` übertragen.
-* Prometheus hat sie sofort abgeholt:
-  ```json
-  {"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"github_workflow_status","workflow":"🎬 Content Pipeline"},"value":[1790023802,"1"]}]}}
-  ```
-* Das Cloud-Dashboard unter [http://<MONITORING_VM_IP>:3000](http://<MONITORING_VM_IP>:3000) zeigt den Status `ONLINE / ERFOLGREICH` jetzt live an!
+   Das neu installierte Grafana in Minikube läuft lokal auf deinem Rechner (`localhost:3000`) und empfängt naturgemäß keine externen GitHub-Cloud-Events.
 
 ### Dauerhafte Lösung für GitHub Actions:
 Aktualisiere in deinen GitHub-Repository-Einstellungen:
 * **Pfad:** `Settings` -> `Secrets and variables` -> `Actions` -> `PUSHGATEWAY_URL`
-* **Neuer Wert:** `http://admin:<DEIN_PUSHGATEWAY_PASSWORT>@<VM_IP>:9091`
-*(Alternativ kann in der Google Cloud Console eine statische IP für die VM reserviert werden, damit sie sich bei Neustarts nie wieder ändert).*
+* **Neuer Wert:** `http://admin:<DEIN_PUSHGATEWAY_PASSWORT>@<MONITORING_VM_IP>:9091`
+*(Empfehlung: In der Google Cloud Console eine statische IP für die VM reservieren, damit sie sich bei Neustarts nie wieder ändert).*
