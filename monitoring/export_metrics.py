@@ -122,9 +122,11 @@ def calculate_metrics_payload() -> str:
     return "\n".join(lines)
 
 
+import argparse
+
 def push_metrics(pushgateway_url: str = None) -> bool:
     if not pushgateway_url:
-        pushgateway_url = os.environ.get("PUSHGATEWAY_URL", "http://admin:<PUSHGATEWAY_PASSWORD>@<MONITORING_VM_IP>:9091")
+        pushgateway_url = os.environ.get("PUSHGATEWAY_URL", "http://localhost:9091")
 
     payload = calculate_metrics_payload().encode("utf-8")
     parsed = urllib.parse.urlsplit(pushgateway_url.strip())
@@ -140,12 +142,25 @@ def push_metrics(pushgateway_url: str = None) -> bool:
 
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
-            print(f"✅ Project & FinOps metrics pushed successfully (HTTP {resp.status})!")
+            print(f"✅ Project & FinOps metrics pushed successfully to {parsed.scheme}://{base_netloc} (HTTP {resp.status})!")
             return True
     except Exception as e:
         print(f"❌ Failed to push metrics: {e}", file=sys.stderr)
         return False
 
 
+def main():
+    parser = argparse.ArgumentParser(
+        description="Aggregiert Projektstatistiken & FinOps-Metriken und sendet sie an das Prometheus Pushgateway."
+    )
+    parser.add_argument(
+        "--pushgateway-url",
+        default=os.environ.get("PUSHGATEWAY_URL", "http://localhost:9091"),
+        help="URL des Pushgateways inkl. optionalem Basic Auth (Standard: $PUSHGATEWAY_URL oder http://localhost:9091)",
+    )
+    args = parser.parse_args()
+    push_metrics(pushgateway_url=args.pushgateway_url)
+
+
 if __name__ == "__main__":
-    push_metrics()
+    main()
