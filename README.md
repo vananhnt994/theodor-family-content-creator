@@ -256,5 +256,16 @@ theodor-family-content-creator/
 ├── run_long_pipeline.py    # Long-Form Pipeline (Gute Nacht Geschichten)
 ├── run_uploader.py         # Upload-Pipeline (Service 5)
 ├── channel_config.py       # Channel-Config Loader
+├── Dockerfile              # Container-Definition für Kubernetes
+├── k8s/                    # Kubernetes Manifeste (Job, CronJob, PVC, Helm)
+├── KUBERNETES.md           # Kubernetes & Cloud Architekturhandbuch
+├── MONITORING.md           # Monitoring & Prometheus Architekturhandbuch
 └── .env                    # API Keys (nicht im Git!)
 ```
+
+---
+
+## ☸️ Kubernetes & Cloud Monitoring
+
+- **Lokaler Cluster & Cloud-Roadmap:** Siehe [KUBERNETES.md](file:///c:/Projects/theodor-family-content-creator/KUBERNETES.md) für den vollständigen Leitfaden zu Minikube, CronJobs und Migration zu GKE.
+- **Monitoring & Metriken:** Siehe [MONITORING.md](file:///c:/Projects/theodor-family-content-creator/MONITORING.md) für die Prometheus- und Grafana-Architektur.
