@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.github/
+.idea/
+.vscode/
+*.log
+
+# Sensitive credentials (injected via K8s secrets)
+.env
+credentials.json
+token.json
+drive_token.json
+client_secret.json
+youtube_token.json
+sa-key.json
+
+# Local output artifacts (mounted via PVC)
+output/*.mp4
+output/*.jpg
+output/*.png
+output/*.mp3
+output/*.wav
+output/shorts/
+output/long/
+html_dumps/
+scratch/

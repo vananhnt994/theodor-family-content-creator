@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: content-creator-output-pvc
+  namespace: content-creator
+  labels:
+    app.kubernetes.io/name: content-creator
+    app.kubernetes.io/part-of: theodor-family-content-creator
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
