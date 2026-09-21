@@ -48,3 +48,20 @@ scratch_quota.py
 analysis*.txt
 selectors_output*.txt
 task.txt
+html_dumps/
+implementation_plan*
+dump_html.py
+analyze_html.py
+test_selectors.py
+.git-backup*
+
+# Input Media (PDF books have copyright / large size)
+input/**/*.pdf
+input/books/*.pdf
+input/shorts/books/*.pdf
+input/long/books/*.pdf
+
+# Channels (ignore private configs, keep template)
+channels/*.json
+!channels/channel.example.json
+
