@@ -170,9 +170,9 @@ def get_starter_dashboard() -> dict:
         "panels": [
             {
                 "id": 1,
-                "title": "Pipeline Status",
+                "title": "Pipeline Status (Letzter Run)",
                 "type": "stat",
-                "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+                "gridPos": {"h": 5, "w": 6, "x": 0, "y": 0},
                 "targets": [
                     {
                         "datasource": {"type": "prometheus", "uid": "auto"},
@@ -196,9 +196,28 @@ def get_starter_dashboard() -> dict:
             },
             {
                 "id": 2,
+                "title": "Letzte Run-Nummer",
+                "type": "stat",
+                "gridPos": {"h": 5, "w": 6, "x": 6, "y": 0},
+                "targets": [
+                    {
+                        "datasource": {"type": "prometheus", "uid": "auto"},
+                        "expr": "github_workflow_latest_run_number",
+                        "refId": "A",
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "none",
+                        "color": {"fixedColor": "#73BF69", "mode": "fixed"},
+                    }
+                },
+            },
+            {
+                "id": 3,
                 "title": "Pipeline Laufzeit (Letzter Durchlauf)",
                 "type": "stat",
-                "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+                "gridPos": {"h": 5, "w": 6, "x": 12, "y": 0},
                 "targets": [
                     {
                         "datasource": {"type": "prometheus", "uid": "auto"},
@@ -214,79 +233,107 @@ def get_starter_dashboard() -> dict:
                             "mode": "absolute",
                             "steps": [
                                 {"value": 0, "color": "green"},
-                                {"value": 120, "color": "yellow"},
-                                {"value": 240, "color": "red"},
+                                {"value": 240, "color": "yellow"},
+                                {"value": 400, "color": "red"},
                             ],
                         },
                     }
                 },
             },
             {
-                "id": 3,
-                "title": "Gesamtanzahl generierter Videos",
-                "type": "stat",
-                "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
-                "targets": [
-                    {
-                        "datasource": {"type": "prometheus", "uid": "auto"},
-                        "expr": 'project_total_videos_created{type="total"}',
-                        "refId": "A",
-                    }
-                ],
-                "fieldConfig": {
-                    "defaults": {
-                        "unit": "none",
-                        "color": {"fixedColor": "#3274D9", "mode": "fixed"},
-                    }
-                },
-            },
-            {
                 "id": 4,
-                "title": "Pipeline Ausführungsdauer über Zeit",
-                "type": "timeseries",
-                "gridPos": {"h": 10, "w": 16, "x": 0, "y": 6},
+                "title": "Erfolgsquote aller Runs",
+                "type": "stat",
+                "gridPos": {"h": 5, "w": 6, "x": 18, "y": 0},
                 "targets": [
                     {
                         "datasource": {"type": "prometheus", "uid": "auto"},
-                        "expr": "github_workflow_duration_seconds",
-                        "legendFormat": "{{workflow}}",
+                        "expr": "github_workflow_success_rate_percent",
                         "refId": "A",
                     }
                 ],
                 "fieldConfig": {
                     "defaults": {
-                        "unit": "s",
-                        "custom": {
-                            "lineInterpolation": "smooth",
-                            "fillOpacity": 15,
-                            "pointSize": 6,
-                            "showPoints": "auto",
+                        "unit": "percent",
+                        "color": {"mode": "thresholds"},
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {"value": 0, "color": "red"},
+                                {"value": 70, "color": "yellow"},
+                                {"value": 85, "color": "green"},
+                            ],
                         },
                     }
                 },
             },
             {
                 "id": 5,
-                "title": "Videos nach Format",
-                "type": "bargauge",
-                "gridPos": {"h": 10, "w": 8, "x": 16, "y": 6},
+                "title": "Laufzeit aller GitHub Workflow-Runs (in Sekunden)",
+                "type": "barchart",
+                "gridPos": {"h": 9, "w": 16, "x": 0, "y": 5},
                 "targets": [
                     {
                         "datasource": {"type": "prometheus", "uid": "auto"},
-                        "expr": 'project_total_videos_created{type=~"shorts|long"}',
-                        "legendFormat": "{{type}}",
+                        "expr": "github_workflow_run_duration_seconds",
+                        "legendFormat": "#{{run_number}} ({{conclusion}})",
                         "refId": "A",
                     }
                 ],
                 "fieldConfig": {
                     "defaults": {
-                        "unit": "none",
+                        "unit": "s",
                         "color": {"mode": "palette-classic"},
                     }
                 },
+            },
+            {
+                "id": 6,
+                "title": "Status aller Durchläufe",
+                "type": "piechart",
+                "gridPos": {"h": 9, "w": 8, "x": 16, "y": 5},
+                "targets": [
+                    {
+                        "datasource": {"type": "prometheus", "uid": "auto"},
+                        "expr": 'github_workflow_runs_total{conclusion=~"success|failure|cancelled"}',
+                        "legendFormat": "{{conclusion}}",
+                        "refId": "A",
+                    }
+                ],
                 "options": {
-                    "orientation": "horizontal",
-                    "displayMode": "gradient",
+                    "legend": {"displayMode": "table", "placement": "right", "values": ["value", "percent"]}
+                },
+            },
+            {
+                "id": 7,
+                "title": "Tabelle aller Workflow-Runs (Detailübersicht)",
+                "type": "table",
+                "gridPos": {"h": 10, "w": 24, "x": 0, "y": 14},
+                "targets": [
+                    {
+                        "datasource": {"type": "prometheus", "uid": "auto"},
+                        "expr": "github_workflow_run_duration_seconds",
+                        "format": "table",
+                        "instant": True,
+                        "refId": "A",
+                    }
+                ],
+                "fieldConfig": {
+                    "defaults": {
+                        "custom": {
+                            "align": "auto",
+                            "displayMode": "auto",
+                        }
+                    },
+                    "overrides": [
+                        {
+                            "matcher": {"id": "byName", "options": "Value"},
+                            "properties": [
+                                {"id": "unit", "value": "s"},
+                                {"id": "displayName", "value": "Dauer (Sekunden)"},
+                            ],
+                        }
+                    ],
                 },
             },
         ],

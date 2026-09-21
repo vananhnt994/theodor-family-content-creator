@@ -119,6 +119,67 @@ def _get_project_and_cost_metrics() -> list:
     ]
 
 
+def _fetch_github_runs_metrics(repository: str, limit: int = 50) -> list:
+    """Ruft dynamisch die letzten Runs aus der GitHub Actions REST API ab."""
+    from datetime import datetime
+    import json
+    url = f"https://api.github.com/repos/{repository}/actions/runs?per_page={limit}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Monitoring-Exporter"})
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if github_token:
+        req.add_header("Authorization", f"Bearer {github_token}")
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return []
+
+    runs = data.get("workflow_runs", [])
+    if not runs:
+        return []
+
+    total_count = data.get("total_count", len(runs))
+    s_repo = str(repository).replace('"', '\\"')
+    success_count = sum(1 for r in runs if str(r.get("conclusion") or "").lower() == "success")
+    failure_count = sum(1 for r in runs if str(r.get("conclusion") or "").lower() == "failure")
+    cancelled_count = sum(1 for r in runs if str(r.get("conclusion") or "").lower() == "cancelled")
+    evaluated = success_count + failure_count
+    success_rate = (success_count / evaluated * 100.0) if evaluated > 0 else 100.0
+
+    lines = [
+        "# HELP github_workflow_latest_run_number Run-Nummer des letzten Workflow-Laufs",
+        "# TYPE github_workflow_latest_run_number gauge",
+        f'github_workflow_latest_run_number{{repo="{s_repo}"}} {runs[0].get("run_number", 0)}',
+        "# HELP github_workflow_runs_total Gesamtzahl der Workflow-Durchlaeufe nach Ergebnis",
+        "# TYPE github_workflow_runs_total gauge",
+        f'github_workflow_runs_total{{repo="{s_repo}",conclusion="success"}} {success_count}',
+        f'github_workflow_runs_total{{repo="{s_repo}",conclusion="failure"}} {failure_count}',
+        f'github_workflow_runs_total{{repo="{s_repo}",conclusion="cancelled"}} {cancelled_count}',
+        f'github_workflow_runs_total{{repo="{s_repo}",conclusion="total"}} {total_count}',
+        "# HELP github_workflow_success_rate_percent Erfolgsquote aller ausgewerteten Durchlaeufe in Prozent",
+        "# TYPE github_workflow_success_rate_percent gauge",
+        f'github_workflow_success_rate_percent{{repo="{s_repo}"}} {success_rate:.1f}',
+        "# HELP github_workflow_run_duration_seconds Dauer jedes einzelnen Workflow-Runs in Sekunden",
+        "# TYPE github_workflow_run_duration_seconds gauge",
+    ]
+
+    for r in runs:
+        num = r.get("run_number")
+        name = str(r.get("name", "Content Pipeline")).replace('"', '\\"')
+        event = str(r.get("event", "unknown")).replace('"', '\\"')
+        conc = str(r.get("conclusion") or r.get("status") or "unknown").lower()
+        try:
+            t_start = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+            t_end = datetime.fromisoformat(r["updated_at"].replace("Z", "+00:00"))
+            dur = max(0.0, (t_end - t_start).total_seconds())
+        except Exception:
+            dur = 0.0
+        lines.append(f'github_workflow_run_duration_seconds{{workflow="{name}",repo="{s_repo}",run_number="{num}",conclusion="{conc}",event="{event}"}} {dur:.1f}')
+
+    return lines
+
+
 def push_to_prometheus_pushgateway(
     pushgateway_url: str,
     workflow_name: str,
@@ -149,6 +210,8 @@ def push_to_prometheus_pushgateway(
             f'github_workflow_status{{workflow="{s_workflow}",repo="{s_repo}",status="{s_status}"}} {int(status_val)}',
             "",
         ]
+        # Dynamische GitHub Actions Runs anhängen
+        lines.extend(_fetch_github_runs_metrics(repository=repository, limit=50))
         lines.extend(_get_project_and_cost_metrics())
         payload = "\n".join(lines).encode("utf-8")
 
